@@ -89,17 +89,17 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header Section with Car Image - fills entire top area */}
-      <div className="flex-1 relative overflow-hidden animate-fade-in bg-[#8a9bae]">
-        <img 
-          src={movaCar} 
-          alt="MOVA - Carro" 
-          className="w-full h-full object-contain"
+      {/* Header Section with Car Image - show full car */}
+      <div className="h-[38vh] relative overflow-hidden animate-fade-in bg-muted">
+        <img
+          src={movaCar}
+          alt="MOVA - Carro"
+          className="w-full h-full object-contain px-3"
         />
       </div>
 
       {/* Form Section */}
-      <div className="bg-card rounded-t-3xl px-6 py-8 animate-slide-up -mt-6 relative z-10">
+      <div className="bg-card rounded-t-3xl px-6 py-8 animate-slide-up relative z-10">
         <p className="text-primary text-center animate-fade-in text-xl font-semibold mb-2">
           Motorista
         </p>
