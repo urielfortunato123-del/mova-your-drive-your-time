@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import movaCar from "@/assets/mova-car.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -36,15 +37,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-primary flex flex-col">
-      {/* Header Section */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-20 h-20 bg-primary-foreground/10 rounded-2xl flex items-center justify-center mb-6 animate-fade-in">
-          <Car className="w-10 h-10 text-primary-foreground" />
+      {/* Header Section with Car Image */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+        <div className="w-full max-w-sm mb-4 animate-fade-in">
+          <img 
+            src={movaCar} 
+            alt="MOVA - Carro" 
+            className="w-full h-auto object-contain drop-shadow-2xl"
+          />
         </div>
-        <h1 className="text-4xl font-display font-bold text-primary-foreground mb-2 animate-fade-in">
-          MOVA
-        </h1>
-        <p className="text-primary-foreground/70 text-center animate-fade-in">
+        <p className="text-primary-foreground/70 text-center animate-fade-in text-lg">
           Motorista
         </p>
       </div>
