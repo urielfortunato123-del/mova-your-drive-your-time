@@ -1,14 +1,13 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Calendar, Clock, DollarSign, Gift, User } from "lucide-react";
+import { Home, Calendar, Map, DollarSign, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/dashboard", icon: Home, label: "Início" },
   { to: "/rides", icon: Calendar, label: "Corridas" },
-  { to: "/history", icon: Clock, label: "Histórico" },
+  { to: "/map", icon: Map, label: "Mapa" },
   { to: "/earnings", icon: DollarSign, label: "Ganhos" },
-  { to: "/benefits", icon: Gift, label: "Benefícios" },
   { to: "/profile", icon: User, label: "Perfil" },
 ];
 

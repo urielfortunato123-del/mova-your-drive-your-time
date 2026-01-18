@@ -15,6 +15,7 @@ import History from "./pages/History";
 import Earnings from "./pages/Earnings";
 import Benefits from "./pages/Benefits";
 import Profile from "./pages/Profile";
+import DriverMap from "./pages/DriverMap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,11 @@ function AppRoutes() {
       <Route path="/benefits" element={
         <ProtectedRoute>
           <Benefits />
+        </ProtectedRoute>
+      } />
+      <Route path="/map" element={
+        <ProtectedRoute>
+          <DriverMap />
         </ProtectedRoute>
       } />
       <Route path="/profile" element={
