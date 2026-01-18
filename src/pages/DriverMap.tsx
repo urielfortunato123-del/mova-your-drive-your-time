@@ -16,9 +16,12 @@ import {
   Loader2,
   RefreshCw,
   Star,
-  Heart
+  Heart,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Fix Leaflet default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -54,6 +57,7 @@ interface FuelPrices {
   gasolina?: number;
   etanol?: number;
   diesel?: number;
+  gnv?: number;
 }
 
 interface PointOfInterest {
@@ -66,6 +70,22 @@ interface PointOfInterest {
   address?: string;
   open24h?: boolean;
   fuelPrices?: FuelPrices;
+  brand?: string;
+  updatedAt?: string;
+}
+
+interface FuelStation {
+  id: string;
+  name: string;
+  brand: string;
+  lat: number;
+  lng: number;
+  address: string;
+  city: string;
+  open24h: boolean;
+  prices: FuelPrices;
+  distance: string;
+  updatedAt: string;
 }
 
 // Simulated POIs - in production would come from an API
@@ -241,6 +261,8 @@ export default function DriverMap() {
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [favorites, setFavorites] = useState<string[]>(getFavorites);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [fuelDataSource, setFuelDataSource] = useState<"api" | "mock">("mock");
+  const [loadingFuel, setLoadingFuel] = useState(false);
 
   const toggleFavorite = (poiId: string) => {
     setFavorites(prev => {
@@ -254,22 +276,67 @@ export default function DriverMap() {
 
   const isFavorite = (poiId: string) => favorites.includes(poiId);
 
-  const fetchLocation = () => {
+  const fetchFuelPrices = async (lat: number, lng: number) => {
+    setLoadingFuel(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fuel-prices', {
+        body: { lat, lng, radiusKm: 5 }
+      });
+      
+      if (error) throw error;
+      
+      const fuelStations: PointOfInterest[] = data.stations.map((station: FuelStation) => ({
+        id: station.id,
+        name: station.name,
+        type: "gas" as const,
+        lat: station.lat,
+        lng: station.lng,
+        distance: station.distance,
+        address: station.address,
+        open24h: station.open24h,
+        fuelPrices: station.prices,
+        brand: station.brand,
+        updatedAt: station.updatedAt,
+      }));
+      
+      setFuelDataSource(data.source);
+      return fuelStations;
+    } catch (error) {
+      console.error("Error fetching fuel prices:", error);
+      toast.error("Erro ao buscar preços. Usando dados locais.");
+      return [];
+    } finally {
+      setLoadingFuel(false);
+    }
+  };
+
+  const fetchLocation = async () => {
     setLoading(true);
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
           const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
           setPosition(coords);
-          setPois(generatePOIs(coords[0], coords[1]));
+          
+          // Fetch fuel prices from edge function
+          const fuelStations = await fetchFuelPrices(coords[0], coords[1]);
+          
+          // Get other POIs (rest, bathroom, parking) from local data
+          const otherPois = generatePOIs(coords[0], coords[1]).filter(p => p.type !== "gas");
+          
+          // Combine fuel stations with other POIs
+          setPois([...fuelStations, ...otherPois]);
           setLoading(false);
         },
-        (error) => {
+        async (error) => {
           console.error("Error getting location:", error);
-          // Default to São Paulo if location fails
           const defaultCoords: [number, number] = [-23.5505, -46.6333];
           setPosition(defaultCoords);
-          setPois(generatePOIs(defaultCoords[0], defaultCoords[1]));
+          
+          const fuelStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+          const otherPois = generatePOIs(defaultCoords[0], defaultCoords[1]).filter(p => p.type !== "gas");
+          setPois([...fuelStations, ...otherPois]);
+          
           setLoading(false);
           toast.error("Não foi possível obter sua localização. Usando localização padrão.");
         },
@@ -278,7 +345,11 @@ export default function DriverMap() {
     } else {
       const defaultCoords: [number, number] = [-23.5505, -46.6333];
       setPosition(defaultCoords);
-      setPois(generatePOIs(defaultCoords[0], defaultCoords[1]));
+      
+      const fuelStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+      const otherPois = generatePOIs(defaultCoords[0], defaultCoords[1]).filter(p => p.type !== "gas");
+      setPois([...fuelStations, ...otherPois]);
+      
       setLoading(false);
     }
   };
@@ -300,11 +371,13 @@ export default function DriverMap() {
   };
 
   const filters = [
-    { type: "gas", label: "Postos", icon: Fuel, color: "text-red-500" },
+    { type: "gas", label: loadingFuel ? "..." : "Postos", icon: Fuel, color: "text-red-500" },
     { type: "rest", label: "Descanso", icon: Coffee, color: "text-blue-500" },
     { type: "bathroom", label: "Banheiros", icon: Bath, color: "text-purple-500" },
     { type: "parking", label: "Estacionar", icon: Car, color: "text-green-500" },
   ];
+
+  const gasStationsCount = pois.filter(p => p.type === "gas").length;
 
   if (loading) {
     return (
@@ -320,6 +393,31 @@ export default function DriverMap() {
   return (
     <PageContainer title="Mapa">
       <div className="space-y-4 pb-4">
+        {/* Data source indicator */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {fuelDataSource === "api" ? (
+              <Badge variant="outline" className="text-xs gap-1 text-green-600 border-green-300">
+                <Wifi className="w-3 h-3" />
+                API Real
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
+                <WifiOff className="w-3 h-3" />
+                Dados Simulados
+              </Badge>
+            )}
+            {gasStationsCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {gasStationsCount} postos encontrados
+              </span>
+            )}
+          </div>
+          {loadingFuel && (
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          )}
+        </div>
+
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
           <Button
