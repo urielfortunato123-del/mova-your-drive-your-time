@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { WaitTimer } from "@/components/ui/wait-timer";
 import { Button } from "@/components/ui/button";
+import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { useDriver } from "@/contexts/DriverContext";
 import { 
   MapPin, 
@@ -28,11 +29,30 @@ import {
 export default function RideDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { rides, activeWaitTimer, startWaitTimer, stopWaitTimer, updateRideStatus } = useDriver();
+  const { 
+    rides, 
+    activeWaitTimer, 
+    startWaitTimer, 
+    stopWaitTimer, 
+    updateRideStatus,
+    sendMessage,
+    getMessagesForRide,
+    getUnreadCount,
+    markMessagesAsRead
+  } = useDriver();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isArrived, setIsArrived] = useState(false);
 
   const ride = rides.find(r => r.id === id);
+  const messages = ride ? getMessagesForRide(ride.id) : [];
+  const unreadCount = ride ? getUnreadCount(ride.id) : 0;
+
+  // Mark messages as read when viewing the ride
+  useEffect(() => {
+    if (ride && unreadCount > 0) {
+      markMessagesAsRead(ride.id);
+    }
+  }, [ride?.id, messages.length]);
 
   if (!ride) {
     return (
@@ -75,6 +95,11 @@ export default function RideDetail() {
     setShowCancelDialog(false);
     toast.info("Corrida cancelada");
     navigate('/rides');
+  };
+
+  const handleSendMessage = (message: string) => {
+    sendMessage(ride.id, message);
+    toast.success("Mensagem enviada");
   };
 
   const cancelReasons = [
@@ -133,14 +158,25 @@ export default function RideDetail() {
                 <p className="text-sm text-muted-foreground">{ride.passengerPhone}</p>
               )}
             </div>
-            {ride.passengerPhone && (
-              <a
-                href={`tel:${ride.passengerPhone}`}
-                className="w-10 h-10 bg-available/10 rounded-full flex items-center justify-center"
-              >
-                <Phone className="w-5 h-5 text-available" />
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Chat Button */}
+              <ChatDrawer
+                rideId={ride.id}
+                passengerName={ride.passengerName}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                unreadCount={unreadCount}
+              />
+              {/* Phone Button */}
+              {ride.passengerPhone && (
+                <a
+                  href={`tel:${ride.passengerPhone}`}
+                  className="w-10 h-10 bg-available/10 rounded-full flex items-center justify-center"
+                >
+                  <Phone className="w-5 h-5 text-available" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
