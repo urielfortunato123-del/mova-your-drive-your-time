@@ -50,6 +50,12 @@ const restIcon = createIcon("#3b82f6", "☕");
 const bathroomIcon = createIcon("#8b5cf6", "🚻");
 const parkingIcon = createIcon("#10b981", "🅿️");
 
+interface FuelPrices {
+  gasolina?: number;
+  etanol?: number;
+  diesel?: number;
+}
+
 interface PointOfInterest {
   id: string;
   name: string;
@@ -59,6 +65,7 @@ interface PointOfInterest {
   distance?: string;
   address?: string;
   open24h?: boolean;
+  fuelPrices?: FuelPrices;
 }
 
 // Simulated POIs - in production would come from an API
@@ -73,6 +80,11 @@ const generatePOIs = (userLat: number, userLng: number): PointOfInterest[] => {
       distance: "850m",
       address: "Av. Paulista, 1000",
       open24h: true,
+      fuelPrices: {
+        gasolina: 5.89,
+        etanol: 3.99,
+        diesel: 5.49,
+      },
     },
     {
       id: "2",
@@ -83,6 +95,11 @@ const generatePOIs = (userLat: number, userLng: number): PointOfInterest[] => {
       distance: "1.2km",
       address: "Rua Augusta, 500",
       open24h: true,
+      fuelPrices: {
+        gasolina: 5.79,
+        etanol: 3.89,
+        diesel: 5.39,
+      },
     },
     {
       id: "3",
@@ -402,6 +419,36 @@ export default function DriverMap() {
                 <h3 className="font-semibold text-lg">{selectedPoi.name}</h3>
                 <p className="text-sm text-muted-foreground">{selectedPoi.address}</p>
                 <p className="text-sm font-medium text-primary mt-1">{selectedPoi.distance}</p>
+                
+                {/* Fuel Prices */}
+                {selectedPoi.type === "gas" && selectedPoi.fuelPrices && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedPoi.fuelPrices.gasolina && (
+                      <div className="bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-md">
+                        <span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Gasolina</span>
+                        <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                          R$ {selectedPoi.fuelPrices.gasolina.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                    {selectedPoi.fuelPrices.etanol && (
+                      <div className="bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-md">
+                        <span className="text-xs text-green-700 dark:text-green-400 font-medium">Etanol</span>
+                        <p className="text-sm font-bold text-green-800 dark:text-green-300">
+                          R$ {selectedPoi.fuelPrices.etanol.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                    {selectedPoi.fuelPrices.diesel && (
+                      <div className="bg-slate-100 dark:bg-slate-900/30 px-2 py-1 rounded-md">
+                        <span className="text-xs text-slate-700 dark:text-slate-400 font-medium">Diesel</span>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-300">
+                          R$ {selectedPoi.fuelPrices.diesel.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <Button
@@ -462,6 +509,21 @@ export default function DriverMap() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{poi.address}</p>
+                    {/* Fuel prices preview for gas stations */}
+                    {poi.type === "gas" && poi.fuelPrices && (
+                      <div className="flex gap-2 mt-1">
+                        {poi.fuelPrices.gasolina && (
+                          <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">
+                            Gas R${poi.fuelPrices.gasolina.toFixed(2)}
+                          </span>
+                        )}
+                        {poi.fuelPrices.etanol && (
+                          <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded font-medium">
+                            Eta R${poi.fuelPrices.etanol.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
