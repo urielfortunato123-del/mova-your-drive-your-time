@@ -38,15 +38,15 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-primary flex flex-col">
       {/* Header Section with Car Image */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
-        <div className="w-full max-w-sm mb-4 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-end pb-6">
+        <div className="w-full animate-fade-in">
           <img 
             src={movaCar} 
             alt="MOVA - Carro" 
-            className="w-full h-auto object-contain drop-shadow-2xl"
+            className="w-full h-auto object-cover"
           />
         </div>
-        <p className="text-primary-foreground/70 text-center animate-fade-in text-lg">
+        <p className="text-primary-foreground/70 text-center animate-fade-in text-xl mt-4">
           Motorista
         </p>
       </div>
