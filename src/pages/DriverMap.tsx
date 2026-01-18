@@ -14,7 +14,9 @@ import {
   Navigation, 
   MapPin,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Star,
+  Heart
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -203,12 +205,37 @@ const getTypeColor = (type: string) => {
   }
 };
 
+// Get favorites from localStorage
+const getFavorites = (): string[] => {
+  const saved = localStorage.getItem("mova-favorites");
+  return saved ? JSON.parse(saved) : [];
+};
+
+// Save favorites to localStorage
+const saveFavorites = (favorites: string[]) => {
+  localStorage.setItem("mova-favorites", JSON.stringify(favorites));
+};
+
 export default function DriverMap() {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
+  const [favorites, setFavorites] = useState<string[]>(getFavorites);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  const toggleFavorite = (poiId: string) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(poiId)
+        ? prev.filter(id => id !== poiId)
+        : [...prev, poiId];
+      saveFavorites(newFavorites);
+      return newFavorites;
+    });
+  };
+
+  const isFavorite = (poiId: string) => favorites.includes(poiId);
 
   const fetchLocation = () => {
     setLoading(true);
@@ -243,9 +270,11 @@ export default function DriverMap() {
     fetchLocation();
   }, []);
 
-  const filteredPois = activeFilter 
-    ? pois.filter(poi => poi.type === activeFilter)
-    : pois;
+  const filteredPois = pois.filter(poi => {
+    const matchesType = activeFilter ? poi.type === activeFilter : true;
+    const matchesFavorite = showFavoritesOnly ? favorites.includes(poi.id) : true;
+    return matchesType && matchesFavorite;
+  });
 
   const openNavigation = (poi: PointOfInterest) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${poi.lat},${poi.lng}&travelmode=driving`;
@@ -277,19 +306,33 @@ export default function DriverMap() {
         {/* Filters */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
           <Button
-            variant={activeFilter === null ? "default" : "outline"}
+            variant={activeFilter === null && !showFavoritesOnly ? "default" : "outline"}
             size="sm"
-            onClick={() => setActiveFilter(null)}
+            onClick={() => { setActiveFilter(null); setShowFavoritesOnly(false); }}
             className="shrink-0"
           >
             Todos
+          </Button>
+          <Button
+            variant={showFavoritesOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className="shrink-0 gap-2"
+          >
+            <Heart className={`w-4 h-4 ${!showFavoritesOnly ? "text-pink-500" : ""}`} />
+            Favoritos
+            {favorites.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                {favorites.length}
+              </Badge>
+            )}
           </Button>
           {filters.map(({ type, label, icon: Icon, color }) => (
             <Button
               key={type}
               variant={activeFilter === type ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveFilter(activeFilter === type ? null : type)}
+              onClick={() => { setActiveFilter(activeFilter === type ? null : type); setShowFavoritesOnly(false); }}
               className="shrink-0 gap-2"
             >
               <Icon className={`w-4 h-4 ${activeFilter !== type ? color : ""}`} />
@@ -360,10 +403,22 @@ export default function DriverMap() {
                 <p className="text-sm text-muted-foreground">{selectedPoi.address}</p>
                 <p className="text-sm font-medium text-primary mt-1">{selectedPoi.distance}</p>
               </div>
-              <Button onClick={() => openNavigation(selectedPoi)} className="shrink-0 gap-2">
-                <Navigation className="w-4 h-4" />
-                Ir
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleFavorite(selectedPoi.id)}
+                  className="shrink-0"
+                >
+                  <Heart 
+                    className={`w-5 h-5 transition-colors ${isFavorite(selectedPoi.id) ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`} 
+                  />
+                </Button>
+                <Button onClick={() => openNavigation(selectedPoi)} className="shrink-0 gap-2">
+                  <Navigation className="w-4 h-4" />
+                  Ir
+                </Button>
+              </div>
             </div>
           </Card>
         )}
@@ -371,8 +426,17 @@ export default function DriverMap() {
         {/* POI List */}
         <div className="space-y-3">
           <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-            Próximos de você ({filteredPois.length})
+            {showFavoritesOnly ? "Seus favoritos" : "Próximos de você"} ({filteredPois.length})
           </h3>
+          {filteredPois.length === 0 && showFavoritesOnly && (
+            <Card className="p-6 text-center">
+              <Heart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground">Nenhum favorito salvo ainda</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Toque no ❤️ para salvar seus locais favoritos
+              </p>
+            </Card>
+          )}
           {filteredPois.map((poi) => {
             const IconComponent = getIconComponent(poi.type);
             return (
@@ -382,8 +446,13 @@ export default function DriverMap() {
                 onClick={() => setSelectedPoi(poi)}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${getTypeColor(poi.type)}`}>
+                  <div className={`p-2 rounded-full ${getTypeColor(poi.type)} relative`}>
                     <IconComponent className="w-5 h-5 text-white" />
+                    {isFavorite(poi.id) && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
+                        <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -394,19 +463,32 @@ export default function DriverMap() {
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{poi.address}</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-semibold text-primary">{poi.distance}</p>
+                  <div className="flex items-center gap-2 shrink-0">
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 px-2"
+                      className="h-8 w-8 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openNavigation(poi);
+                        toggleFavorite(poi.id);
                       }}
                     >
-                      <Navigation className="w-4 h-4" />
+                      <Heart className={`w-4 h-4 transition-colors ${isFavorite(poi.id) ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`} />
                     </Button>
+                    <div className="text-right">
+                      <p className="font-semibold text-primary">{poi.distance}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openNavigation(poi);
+                        }}
+                      >
+                        <Navigation className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>
