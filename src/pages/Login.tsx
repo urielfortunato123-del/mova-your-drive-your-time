@@ -90,11 +90,11 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header Section with Car Image - fills entire top area */}
-      <div className="flex-1 relative overflow-hidden animate-fade-in">
+      <div className="flex-1 relative overflow-hidden animate-fade-in bg-[#8a9bae]">
         <img 
           src={movaCar} 
           alt="MOVA - Carro" 
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-contain"
         />
       </div>
 
