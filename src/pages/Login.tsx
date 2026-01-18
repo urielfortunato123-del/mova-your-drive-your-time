@@ -88,24 +88,22 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
-      {/* Header Section with Car Image */}
-      <div className="flex-1 flex flex-col items-center justify-end pb-6">
-        <div className="w-full animate-fade-in">
-          <img 
-            src={movaCar} 
-            alt="MOVA - Carro" 
-            className="w-full h-auto object-cover"
-          />
-        </div>
-        <p className="text-primary-foreground/70 text-center animate-fade-in text-xl mt-4">
-          Motorista
-        </p>
+    <div className="min-h-screen flex flex-col">
+      {/* Header Section with Car Image - fills entire top area */}
+      <div className="flex-1 relative overflow-hidden animate-fade-in">
+        <img 
+          src={movaCar} 
+          alt="MOVA - Carro" 
+          className="w-full h-full object-cover object-center"
+        />
       </div>
 
       {/* Form Section */}
-      <div className="bg-card rounded-t-3xl px-6 py-8 animate-slide-up">
-        <p className="text-center text-muted-foreground text-sm mb-8">
+      <div className="bg-card rounded-t-3xl px-6 py-8 animate-slide-up -mt-6 relative z-10">
+        <p className="text-primary text-center animate-fade-in text-xl font-semibold mb-2">
+          Motorista
+        </p>
+        <p className="text-center text-muted-foreground text-sm mb-6">
           {isSignUp ? "Crie sua conta e comece a dirigir." : "Mobilidade que respeita seu tempo."}
         </p>
 
