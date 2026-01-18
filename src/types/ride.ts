@@ -1,6 +1,15 @@
 export type RideStatus = 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
 export type DriverStatus = 'available' | 'paused' | 'unavailable';
 
+export interface ChatMessage {
+  id: string;
+  rideId: string;
+  sender: 'driver' | 'passenger';
+  message: string;
+  timestamp: string; // ISO string
+  read: boolean;
+}
+
 export interface Ride {
   id: string;
   passengerName: string;
@@ -15,6 +24,7 @@ export interface Ride {
   startedAt?: string;
   completedAt?: string;
   cancelReason?: string;
+  messages?: ChatMessage[];
 }
 
 export interface DailyStats {
