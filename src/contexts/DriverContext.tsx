@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Ride, DriverStatus, DailyStats, EarningsSummary, Partner, ChatMessage } from '@/types/ride';
 
 interface DriverContextType {
@@ -17,6 +17,11 @@ interface DriverContextType {
   getMessagesForRide: (rideId: string) => ChatMessage[];
   getUnreadCount: (rideId: string) => number;
   markMessagesAsRead: (rideId: string) => void;
+  // Online time tracking
+  isOnline: boolean;
+  onlineStartTime: Date | null;
+  todayOnlineSeconds: number;
+  toggleOnline: () => void;
 }
 
 const DriverContext = createContext<DriverContextType | undefined>(undefined);
@@ -99,6 +104,39 @@ export function DriverProvider({ children }: { children: ReactNode }) {
   const [rides, setRides] = useState<Ride[]>(mockRides);
   const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
   const [activeWaitTimer, setActiveWaitTimer] = useState<{ rideId: string; startTime: Date } | null>(null);
+  
+  // Online time tracking
+  const [isOnline, setIsOnline] = useState(false);
+  const [onlineStartTime, setOnlineStartTime] = useState<Date | null>(null);
+  const [todayOnlineSeconds, setTodayOnlineSeconds] = useState(0);
+
+  // Update online timer every second
+  useEffect(() => {
+    if (!isOnline || !onlineStartTime) return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - onlineStartTime.getTime()) / 1000);
+      setTodayOnlineSeconds(prev => {
+        // Calculate base + elapsed from current session
+        const baseSeconds = prev - elapsed + 1;
+        return baseSeconds + elapsed + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOnline, onlineStartTime]);
+
+  const toggleOnline = () => {
+    if (isOnline) {
+      // Going offline - save accumulated time
+      setIsOnline(false);
+      setOnlineStartTime(null);
+    } else {
+      // Going online
+      setIsOnline(true);
+      setOnlineStartTime(new Date());
+    }
+  };
 
   const todayRides = rides.filter(ride => {
     const rideDate = new Date(ride.pickupTime);
@@ -205,6 +243,10 @@ export function DriverProvider({ children }: { children: ReactNode }) {
       getMessagesForRide,
       getUnreadCount,
       markMessagesAsRead,
+      isOnline,
+      onlineStartTime,
+      todayOnlineSeconds,
+      toggleOnline,
     }}>
       {children}
     </DriverContext.Provider>
