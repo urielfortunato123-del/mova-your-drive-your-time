@@ -16,6 +16,7 @@ import Earnings from "./pages/Earnings";
 import Benefits from "./pages/Benefits";
 import Profile from "./pages/Profile";
 import DriverMap from "./pages/DriverMap";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ function AppRoutes() {
           <Profile />
         </ProtectedRoute>
       } />
+      <Route path="/install" element={<Install />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
