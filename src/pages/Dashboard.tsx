@@ -6,13 +6,14 @@ import { RideCard } from "@/components/ui/ride-card";
 import { Button } from "@/components/ui/button";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin } from "lucide-react";
+import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { dailyStats, todayRides } = useDriver();
+  const { dailyStats, todayRides, isOnline, todayOnlineSeconds, toggleOnline } = useDriver();
   const { driver } = useAuth();
 
   const nextRide = todayRides
@@ -25,6 +26,13 @@ export default function Dashboard() {
     return format(time, "HH:mm", { locale: ptBR });
   };
 
+  const formatOnlineTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <PageContainer title="MOVA">
       <div className="space-y-6">
@@ -34,6 +42,49 @@ export default function Dashboard() {
           <h2 className="text-2xl font-display font-bold text-foreground">
             {driver?.name?.split(' ')[0] || 'Motorista'}
           </h2>
+        </div>
+
+        {/* Online Toggle Section */}
+        <div className={cn(
+          "rounded-2xl p-4 transition-all duration-300 animate-fade-in",
+          isOnline 
+            ? "bg-available/10 border-2 border-available" 
+            : "bg-muted border-2 border-border"
+        )}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
+                isOnline ? "bg-available text-available-foreground" : "bg-muted-foreground/20 text-muted-foreground"
+              )}>
+                <Timer className="w-6 h-6" />
+              </div>
+              <div>
+                <p className={cn(
+                  "font-semibold text-lg",
+                  isOnline ? "text-available" : "text-muted-foreground"
+                )}>
+                  {isOnline ? "Online" : "Offline"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Tempo hoje: <span className="font-mono font-medium">{formatOnlineTime(todayOnlineSeconds)}</span>
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={toggleOnline}
+              size="lg"
+              className={cn(
+                "gap-2 min-w-[120px] transition-all",
+                isOnline 
+                  ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" 
+                  : "bg-available hover:bg-available/90 text-available-foreground"
+              )}
+            >
+              <Power className="w-5 h-5" />
+              {isOnline ? "Parar" : "Iniciar"}
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
