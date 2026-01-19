@@ -5,6 +5,18 @@ import { useDriver } from "@/contexts/DriverContext";
 import { DollarSign, TrendingUp, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
+
+// Mock data for worked hours per day (last 7 days)
+const hoursWorkedData = [
+  { day: "Seg", hours: 6.5 },
+  { day: "Ter", hours: 8.2 },
+  { day: "Qua", hours: 7.0 },
+  { day: "Qui", hours: 9.5 },
+  { day: "Sex", hours: 10.0 },
+  { day: "Sáb", hours: 5.5 },
+  { day: "Dom", hours: 3.0 },
+];
 
 export default function Earnings() {
   const { earnings, rides } = useDriver();
@@ -14,6 +26,9 @@ export default function Earnings() {
   const handleExport = () => {
     toast.info("Exportação disponível em breve!");
   };
+
+  const totalWeekHours = hoursWorkedData.reduce((sum, d) => sum + d.hours, 0);
+  const avgDailyHours = (totalWeekHours / 7).toFixed(1);
 
   return (
     <PageContainer title="Ganhos">
@@ -43,6 +58,56 @@ export default function Earnings() {
             value={`R$ ${earnings.week.toFixed(2)}`}
             icon={TrendingUp}
           />
+        </div>
+
+        {/* Hours Worked Chart */}
+        <div className="bg-card rounded-xl border border-border p-4 animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-foreground">Horas Trabalhadas</h3>
+              <p className="text-xs text-muted-foreground">Últimos 7 dias</p>
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-bold text-primary">{totalWeekHours.toFixed(1)}h</p>
+              <p className="text-xs text-muted-foreground">média {avgDailyHours}h/dia</p>
+            </div>
+          </div>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hoursWorkedData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <XAxis 
+                  dataKey="day" 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tickFormatter={(value) => `${value}h`}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px'
+                  }}
+                  formatter={(value: number) => [`${value}h`, 'Horas']}
+                />
+                <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                  {hoursWorkedData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === hoursWorkedData.length - 1 ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.5)'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Waiting Earnings Card */}
