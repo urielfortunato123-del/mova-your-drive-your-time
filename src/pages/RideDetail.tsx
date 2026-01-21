@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { WaitTimer } from "@/components/ui/wait-timer";
 import { Button } from "@/components/ui/button";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
+import { PassengerRatingDialog } from "@/components/ride/PassengerRatingDialog";
 import { useDriver } from "@/contexts/DriverContext";
 import { 
   MapPin, 
@@ -13,7 +14,8 @@ import {
   Navigation, 
   X,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Flag
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,6 +43,7 @@ export default function RideDetail() {
     markMessagesAsRead
   } = useDriver();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
   const [isArrived, setIsArrived] = useState(false);
 
   const ride = rides.find(r => r.id === id);
@@ -100,6 +103,20 @@ export default function RideDetail() {
   const handleSendMessage = (message: string) => {
     sendMessage(ride.id, message);
     toast.success("Mensagem enviada");
+  };
+
+  const handleCompleteRide = () => {
+    setShowRatingDialog(true);
+  };
+
+  const handleSubmitRating = (rating: number, comment?: string) => {
+    // Here you would save the rating to the database
+    console.log("Rating submitted:", { rideId: ride.id, rating, comment });
+    updateRideStatus(ride.id, 'completed');
+    stopWaitTimer();
+    setShowRatingDialog(false);
+    toast.success(`Corrida finalizada! Avaliação: ${rating} estrelas`);
+    navigate('/rides');
   };
 
   const cancelReasons = [
@@ -238,6 +255,19 @@ export default function RideDetail() {
           </div>
         )}
 
+        {/* Complete Ride Button - Show when waiting for passenger or timer active */}
+        {isActiveTimer && (
+          <div className="space-y-3 animate-slide-up">
+            <Button 
+              onClick={handleCompleteRide}
+              className="w-full h-14 text-base gap-2 bg-primary hover:bg-primary/90"
+            >
+              <Flag className="w-5 h-5" />
+              Finalizar Corrida
+            </Button>
+          </div>
+        )}
+
         {/* Cancel Button */}
         {(ride.status === 'confirmed' || ride.status === 'in_progress') && (
           <Button 
@@ -273,6 +303,14 @@ export default function RideDetail() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Rating Dialog */}
+        <PassengerRatingDialog
+          open={showRatingDialog}
+          onOpenChange={setShowRatingDialog}
+          passengerName={ride.passengerName}
+          onSubmit={handleSubmitRating}
+        />
       </div>
     </PageContainer>
   );
