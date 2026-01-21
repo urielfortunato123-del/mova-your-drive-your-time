@@ -12,9 +12,17 @@ import {
   LogOut,
   ChevronRight,
   Mail,
-  Phone
+  Phone,
+  Star
 } from "lucide-react";
 import { toast } from "sonner";
+
+// Mock rating stats (will be replaced with real data from database)
+const ratingStats = {
+  average: 4.7,
+  total: 142,
+  breakdown: { 5: 98, 4: 35, 3: 9 }
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -61,6 +69,42 @@ export default function Profile() {
                   Motorista ativo
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rating Stats */}
+        <div className="bg-card rounded-xl border border-border p-4 animate-slide-up">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Avaliações Dadas</h3>
+          <div className="flex items-center gap-4">
+            {/* Average */}
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1">
+                <span className="text-3xl font-bold text-foreground">{ratingStats.average}</span>
+                <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
+              </div>
+              <span className="text-xs text-muted-foreground">{ratingStats.total} avaliações</span>
+            </div>
+            
+            {/* Breakdown bars */}
+            <div className="flex-1 space-y-1.5">
+              {[5, 4, 3].map((stars) => {
+                const count = ratingStats.breakdown[stars as keyof typeof ratingStats.breakdown];
+                const percentage = (count / ratingStats.total) * 100;
+                return (
+                  <div key={stars} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-3">{stars}</span>
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-yellow-400 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-8">{count}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
