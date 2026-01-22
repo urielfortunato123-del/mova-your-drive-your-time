@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { StatCard } from "@/components/ui/stat-card";
 import { RideCard } from "@/components/ui/ride-card";
 import { Button } from "@/components/ui/button";
+import { DailyGoal } from "@/components/dashboard/DailyGoal";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard } from "lucide-react";
@@ -11,9 +12,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Daily goal (can be made configurable later)
+const DAILY_GOAL = 300;
+
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { dailyStats, todayRides, isOnline, todayOnlineSeconds, toggleOnline } = useDriver();
+  const { dailyStats, todayRides, isOnline, todayOnlineSeconds, toggleOnline, earnings } = useDriver();
   const { driver } = useAuth();
 
   const nextRide = todayRides
@@ -112,7 +116,12 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Bradesco Partner Banner */}
+        {/* Daily Goal */}
+        <DailyGoal 
+          current={earnings.today} 
+          goal={DAILY_GOAL} 
+          className="animate-slide-up"
+        />
         <Link to="/bradesco" className="block animate-slide-up">
           <div className="bg-gradient-to-r from-[#CC092F] to-[#8B0620] rounded-2xl p-4 text-white hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">

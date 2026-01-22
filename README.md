@@ -571,20 +571,53 @@ Para dúvidas ou suporte técnico, entre em contato com a equipe de desenvolvime
 
 ## 🗺️ Roadmap (Próximas Features)
 
+### ✅ Implementado (v1.1.0)
+- [x] Parceria MOVA + Bradesco S.A. (Programa de KM)
+- [x] Upload de foto de perfil (Supabase Storage)
+- [x] Modo escuro/claro com toggle
+- [x] Meta diária de ganhos
+- [x] Comprovante de corrida (download/compartilhar)
+- [x] Avaliação de passageiros (3-5 estrelas)
+- [x] Gráfico de horas trabalhadas
+- [x] Banner de instalação PWA flutuante
+
 ### Em Desenvolvimento
-- [ ] Dashboard completo
 - [ ] Push notifications reais
+- [ ] Persistência de avaliações no banco
 - [ ] Integração com API de preços ANP
 
 ### Planejado
 - [ ] Histórico de corridas no banco de dados
-- [ ] Upload de foto de perfil
-- [ ] Modo escuro
 - [ ] Relatórios em PDF
 - [ ] Integração com Waze
-- [ ] Avaliação de passageiros
+- [ ] Chat em tempo real (WebSocket)
+- [ ] Rastreamento GPS
 
 ---
 
-**Versão:** 1.0.0  
+## 🏦 Parceria MOVA + Bradesco S.A.
+
+O MOVA possui uma parceria exclusiva com o Banco Bradesco, oferecendo um programa de fidelidade para motoristas:
+
+### Programa de KM
+- **Acúmulo**: R$ 1 gasto no cartão Bradesco = 0,5 KM
+- **Resgate**: KM podem ser trocados por benefícios exclusivos
+
+### Benefícios Disponíveis
+| Benefício | Custo (KM) | Desconto |
+|-----------|------------|----------|
+| Seguro Auto | 500 KM | Até 15% OFF |
+| Combustível | 100 KM | R$ 0,10/litro |
+| Troca de Óleo | 200 KM | 20% OFF |
+| Manutenção Geral | 300 KM | Até 25% OFF |
+| Revisão Completa | 400 KM | 30% OFF |
+
+### Acesso
+- Dashboard → Banner Bradesco
+- Benefícios → Card Bradesco
+- Rota: `/bradesco`
+
+---
+
+**Versão:** 1.1.0  
 **Última atualização:** Janeiro 2025
