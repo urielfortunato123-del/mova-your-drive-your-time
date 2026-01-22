@@ -1,8 +1,11 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { QrCode, Fuel, Wrench, CircleDot, Droplet, Sparkles } from "lucide-react";
+import { QrCode, Fuel, Wrench, CircleDot, Droplet, Sparkles, ArrowRight, CreditCard } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const categoryIcons: Record<string, React.ReactNode> = {
   'Combustível': <Fuel className="w-5 h-5" />,
@@ -22,6 +25,45 @@ export default function Benefits() {
   return (
     <PageContainer title="Benefícios">
       <div className="space-y-6">
+        {/* Bradesco Partner Banner */}
+        <Link to="/bradesco">
+          <Card className="overflow-hidden animate-fade-in hover:shadow-lg transition-shadow">
+            <CardContent className="p-0">
+              <div className="bg-gradient-to-r from-[#CC092F] to-[#8B0620] p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                      <span className="text-[#CC092F] font-bold">B</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold">MOVA + Bradesco S.A.</p>
+                      <p className="text-xs text-white/80">Programa de KM exclusivo</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">Ver benefícios</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4" />
+                    <span>R$ 1 = 0,5 KM</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Fuel className="w-4 h-4" />
+                    <span>Combustível</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Wrench className="w-4 h-4" />
+                    <span>Manutenção</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
         {/* QR Code Section */}
         <div className="bg-card rounded-2xl border border-border p-6 animate-fade-in">
           <div className="text-center">
