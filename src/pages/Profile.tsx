@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
+import { useProfilePhoto } from "@/hooks/useProfilePhoto";
 import { 
   User, 
   Car, 
@@ -13,9 +15,14 @@ import {
   ChevronRight,
   Mail,
   Phone,
-  Star
+  Star,
+  Camera,
+  Moon,
+  Sun,
+  Monitor
 } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 // Mock rating stats (will be replaced with real data from database)
 const ratingStats = {
@@ -26,7 +33,10 @@ const ratingStats = {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { driver, logout } = useAuth();
+  const { driver, logout, refreshDriver } = useAuth();
+  const { theme, setTheme, isDark } = useTheme();
+  const { uploadPhoto, uploading } = useProfilePhoto();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -38,6 +48,42 @@ export default function Profile() {
     toast.info("Edição de perfil disponível em breve!");
   };
 
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && driver) {
+      const newPhotoUrl = await uploadPhoto(file, driver.id);
+      if (newPhotoUrl) {
+        refreshDriver();
+      }
+    }
+  };
+
+  const handleThemeToggle = () => {
+    if (theme === 'light') {
+      setTheme('dark');
+    } else if (theme === 'dark') {
+      setTheme('system');
+    } else {
+      setTheme('light');
+    }
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'dark') return <Moon className="w-5 h-5" />;
+    if (theme === 'light') return <Sun className="w-5 h-5" />;
+    return <Monitor className="w-5 h-5" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === 'dark') return 'Escuro';
+    if (theme === 'light') return 'Claro';
+    return 'Sistema';
+  };
+
   if (!driver) {
     return null;
   }
@@ -45,10 +91,23 @@ export default function Profile() {
   return (
     <PageContainer title="Perfil" showStatus={false}>
       <div className="space-y-6">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handlePhotoChange}
+          className="hidden"
+        />
+
         {/* Profile Header */}
         <div className="bg-card rounded-2xl border border-border p-6 animate-fade-in">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+            <button 
+              onClick={handlePhotoClick}
+              disabled={uploading}
+              className="relative w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center group overflow-hidden"
+            >
               {driver.photo ? (
                 <img 
                   src={driver.photo} 
@@ -58,7 +117,15 @@ export default function Profile() {
               ) : (
                 <User className="w-10 h-10 text-primary" />
               )}
-            </div>
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
             <div className="flex-1">
               <h2 className="text-xl font-display font-bold text-foreground">
                 {driver.name}
@@ -150,6 +217,26 @@ export default function Profile() {
               <MapPin className="w-5 h-5 text-muted-foreground" />
               <span className="text-foreground">{driver.city}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Theme Toggle */}
+        <div className="bg-card rounded-xl border border-border p-4 animate-slide-up">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {getThemeIcon()}
+              <div>
+                <p className="font-medium text-foreground">Tema</p>
+                <p className="text-sm text-muted-foreground">{getThemeLabel()}</p>
+              </div>
+            </div>
+            <Button
+              onClick={handleThemeToggle}
+              variant="outline"
+              size="sm"
+            >
+              Alterar
+            </Button>
           </div>
         </div>
 

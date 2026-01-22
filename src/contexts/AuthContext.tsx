@@ -23,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
+  refreshDriver: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,6 +135,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setDriver(null);
   };
 
+  const refreshDriver = async () => {
+    if (user) {
+      await fetchDriverProfile(user.id);
+    }
+  };
+
   const isAuthenticated = !!session;
 
   return (
@@ -145,7 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading, 
       login, 
       signUp, 
-      logout 
+      logout,
+      refreshDriver
     }}>
       {children}
     </AuthContext.Provider>
