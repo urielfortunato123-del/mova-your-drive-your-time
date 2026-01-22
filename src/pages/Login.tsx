@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Lock, Eye, EyeOff, User, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { InstallBanner } from "@/components/InstallBanner";
 import { toast } from "sonner";
 import movaCar from "@/assets/mova-car.png";
 import { z } from "zod";
@@ -211,6 +212,9 @@ export default function Login() {
           Ao {isSignUp ? "criar sua conta" : "entrar"}, você concorda com nossos Termos de Uso e Política de Privacidade.
         </p>
       </div>
+
+      {/* Floating Install Banner */}
+      <InstallBanner delay={3000} />
     </div>
   );
 }
