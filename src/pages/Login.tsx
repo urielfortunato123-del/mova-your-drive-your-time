@@ -4,7 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Download } from "lucide-react";
+import { Link } from "react-router-dom";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { toast } from "sonner";
 import movaCar from "@/assets/mova-car.png";
 import { z } from "zod";
@@ -29,6 +31,7 @@ export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const { login, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isInstalled } = usePWAInstall();
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -96,6 +99,17 @@ export default function Login() {
           alt="MOVA - Carro"
           className="w-full h-full object-cover"
         />
+        
+        {/* Install App Button */}
+        {!isInstalled && (
+          <Link 
+            to="/install"
+            className="absolute top-4 right-4 flex items-center gap-2 bg-background/90 backdrop-blur-sm text-foreground px-4 py-2 rounded-full shadow-lg hover:bg-background transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span className="text-sm font-medium">Instalar App</span>
+          </Link>
+        )}
       </div>
 
       {/* Form Section */}
