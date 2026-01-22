@@ -16,6 +16,7 @@ import Earnings from "./pages/Earnings";
 import Benefits from "./pages/Benefits";
 import Profile from "./pages/Profile";
 import DriverMap from "./pages/DriverMap";
+import BradescoPartner from "./pages/BradescoPartner";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -78,6 +79,11 @@ function AppRoutes() {
       <Route path="/profile" element={
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      } />
+      <Route path="/bradesco" element={
+        <ProtectedRoute>
+          <BradescoPartner />
         </ProtectedRoute>
       } />
       <Route path="/install" element={<Install />} />
