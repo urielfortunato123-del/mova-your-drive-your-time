@@ -12,6 +12,7 @@ interface DriverProfile {
   plate?: string;
   city?: string;
   isActive: boolean;
+  operadora?: string;
 }
 
 interface AuthContextType {
@@ -84,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         plate: data.plate || undefined,
         city: data.city || undefined,
         isActive: data.is_active,
+        operadora: data.operadora || undefined,
       });
     }
   };

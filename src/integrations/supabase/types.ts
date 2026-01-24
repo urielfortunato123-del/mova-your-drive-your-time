@@ -22,6 +22,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          operadora: string | null
           phone: string | null
           photo: string | null
           plano: string | null
@@ -39,6 +40,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          operadora?: string | null
           phone?: string | null
           photo?: string | null
           plano?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          operadora?: string | null
           phone?: string | null
           photo?: string | null
           plano?: string | null
@@ -70,7 +73,9 @@ export type Database = {
       }
       premium_history: {
         Row: {
+          beneficio_telefonia: boolean | null
           bonus_recebido: number | null
+          bonus_telefonia: number | null
           corridas_total: number | null
           created_at: string | null
           driver_id: string
@@ -83,7 +88,9 @@ export type Database = {
           status_final: string | null
         }
         Insert: {
+          beneficio_telefonia?: boolean | null
           bonus_recebido?: number | null
+          bonus_telefonia?: number | null
           corridas_total?: number | null
           created_at?: string | null
           driver_id: string
@@ -96,7 +103,9 @@ export type Database = {
           status_final?: string | null
         }
         Update: {
+          beneficio_telefonia?: boolean | null
           bonus_recebido?: number | null
+          bonus_telefonia?: number | null
           corridas_total?: number | null
           created_at?: string | null
           driver_id?: string
@@ -126,9 +135,11 @@ export type Database = {
           created_at: string | null
           driver_id: string
           gasto_manutencao_mes: number | null
+          horas_app_mes: number | null
           horas_logadas_mes: number | null
           id: string
           litros_combustivel_mes: number | null
+          meta_telefonia: boolean | null
           month_year: string
           seguro_ativo: boolean | null
           updated_at: string | null
@@ -140,9 +151,11 @@ export type Database = {
           created_at?: string | null
           driver_id: string
           gasto_manutencao_mes?: number | null
+          horas_app_mes?: number | null
           horas_logadas_mes?: number | null
           id?: string
           litros_combustivel_mes?: number | null
+          meta_telefonia?: boolean | null
           month_year: string
           seguro_ativo?: boolean | null
           updated_at?: string | null
@@ -154,9 +167,11 @@ export type Database = {
           created_at?: string | null
           driver_id?: string
           gasto_manutencao_mes?: number | null
+          horas_app_mes?: number | null
           horas_logadas_mes?: number | null
           id?: string
           litros_combustivel_mes?: number | null
+          meta_telefonia?: boolean | null
           month_year?: string
           seguro_ativo?: boolean | null
           updated_at?: string | null

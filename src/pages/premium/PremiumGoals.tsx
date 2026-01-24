@@ -12,9 +12,10 @@ import {
   Shield,
   Trophy,
   ArrowRight,
-  Crown
+  Crown,
+  Smartphone
 } from 'lucide-react';
-import { usePremium, PREMIUM_GOALS } from '@/hooks/usePremium';
+import { usePremium, PREMIUM_GOALS, OPERADORAS_ELEGIVEIS } from '@/hooks/usePremium';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,9 +26,11 @@ export default function PremiumGoals() {
     isPremium, 
     currentGoals, 
     isLoading, 
+    operadora,
     calculateProgress, 
     getProgressStatus,
-    checkBonusEligibility 
+    checkBonusEligibility,
+    checkTelefoniaEligibility
   } = usePremium();
 
   const currentMonth = format(new Date(), 'MMMM yyyy', { locale: ptBR });
@@ -53,6 +56,7 @@ export default function PremiumGoals() {
     litros_combustivel_mes: 0,
     gasto_manutencao_mes: 0,
     seguro_ativo: false,
+    horas_app_mes: 0,
   };
 
   const progressItems = [
@@ -108,6 +112,8 @@ export default function PremiumGoals() {
   };
 
   const bonusEligible = checkBonusEligibility();
+  const telefoniaEligible = checkTelefoniaEligibility();
+  const isOperadoraElegivel = operadora ? OPERADORAS_ELEGIVEIS.includes(operadora) : false;
 
   return (
     <PageContainer title="Painel de Metas">
@@ -236,8 +242,44 @@ export default function PremiumGoals() {
           </Card>
         </div>
 
+        {/* Telefonia Meta Card */}
+        <Card 
+          className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => navigate('/premium/telefonia')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-xl",
+                telefoniaEligible ? "bg-success/10" : isOperadoraElegivel ? "bg-warning/10" : "bg-muted"
+              )}>
+                <Smartphone className={cn(
+                  "w-5 h-5",
+                  telefoniaEligible ? "text-success" : isOperadoraElegivel ? "text-warning" : "text-muted-foreground"
+                )} />
+              </div>
+              <div>
+                <p className="font-medium text-foreground text-sm">Meta Telefonia</p>
+                <p className="text-xs text-muted-foreground">
+                  {operadora ? `${operadora} • +R$ 50 bônus` : 'Selecione sua operadora'}
+                </p>
+              </div>
+            </div>
+            <div className={cn(
+              "px-3 py-1 rounded-full text-xs font-medium",
+              telefoniaEligible 
+                ? "bg-success/10 text-success" 
+                : isOperadoraElegivel
+                  ? "bg-warning/10 text-warning"
+                  : "bg-muted text-muted-foreground"
+            )}>
+              {telefoniaEligible ? 'Ativo' : isOperadoraElegivel ? 'Em progresso' : 'Configurar'}
+            </div>
+          </div>
+        </Card>
+
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button 
             variant="outline" 
             onClick={() => navigate('/premium/partners')}
@@ -245,6 +287,14 @@ export default function PremiumGoals() {
           >
             <Fuel className="w-5 h-5" />
             <span className="text-xs">Parceiros</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/premium/telefonia')}
+            className="h-auto py-3 flex-col gap-1"
+          >
+            <Smartphone className="w-5 h-5" />
+            <span className="text-xs">Telefonia</span>
           </Button>
           <Button 
             variant="outline" 

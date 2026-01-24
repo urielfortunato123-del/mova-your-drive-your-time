@@ -14,6 +14,8 @@ export interface PremiumGoals {
   seguro_ativo: boolean;
   bonus_status: 'em_progresso' | 'liberado' | 'nao_liberado';
   bonus_valor: number;
+  meta_telefonia: boolean;
+  horas_app_mes: number;
 }
 
 export interface PremiumHistory {
@@ -26,6 +28,8 @@ export interface PremiumHistory {
   horas_total: number;
   litros_total: number;
   manutencao_total: number;
+  beneficio_telefonia: boolean;
+  bonus_telefonia: number;
 }
 
 export interface PremiumPartner {
@@ -46,12 +50,17 @@ export const PREMIUM_GOALS = {
   horas: 192,
   litros: 400,
   manutencao: 120,
+  horasApp: 10, // Horas mínimas de uso do app para meta telefonia
 };
 
 export const PREMIUM_BONUS_RANGE = {
   min: 600,
   max: 700,
 };
+
+export const TELEFONIA_BONUS = 50;
+
+export const OPERADORAS_ELEGIVEIS = ['TIM', 'Claro', 'Vivo'];
 
 export function usePremium() {
   const { driver } = useAuth();
@@ -61,7 +70,7 @@ export function usePremium() {
   const [currentGoals, setCurrentGoals] = useState<PremiumGoals | null>(null);
   const [history, setHistory] = useState<PremiumHistory[]>([]);
   const [partners, setPartners] = useState<PremiumPartner[]>([]);
-
+  const [operadora, setOperadora] = useState<string | null>(null);
   const currentMonthYear = format(new Date(), 'yyyy-MM');
 
   const fetchPremiumStatus = useCallback(async () => {
@@ -70,13 +79,14 @@ export function usePremium() {
     try {
       const { data: profileData } = await supabase
         .from('driver_profiles')
-        .select('plano, premium_status, premium_inicio')
+        .select('plano, premium_status, premium_inicio, operadora')
         .eq('id', driver.id)
         .single();
 
       if (profileData) {
         setIsPremium(profileData.plano === 'premium');
         setPremiumStatus(profileData.premium_status || 'inativo');
+        setOperadora(profileData.operadora || null);
       }
     } catch (error) {
       console.error('Error fetching premium status:', error);
@@ -111,6 +121,8 @@ export function usePremium() {
           seguro_ativo: data.seguro_ativo || false,
           bonus_status: data.bonus_status as 'em_progresso' | 'liberado' | 'nao_liberado',
           bonus_valor: Number(data.bonus_valor) || 0,
+          meta_telefonia: data.meta_telefonia || false,
+          horas_app_mes: Number(data.horas_app_mes) || 0,
         });
       }
     } catch (error) {
@@ -144,6 +156,8 @@ export function usePremium() {
           horas_total: Number(item.horas_total) || 0,
           litros_total: Number(item.litros_total) || 0,
           manutencao_total: Number(item.manutencao_total) || 0,
+          beneficio_telefonia: item.beneficio_telefonia || false,
+          bonus_telefonia: Number(item.bonus_telefonia) || 0,
         })));
       }
     } catch (error) {
@@ -265,6 +279,25 @@ export function usePremium() {
     );
   };
 
+  const checkTelefoniaEligibility = (): boolean => {
+    if (!currentGoals || !operadora) return false;
+    
+    const isOperadoraElegivel = OPERADORAS_ELEGIVEIS.includes(operadora);
+    const metaHorasApp = currentGoals.horas_app_mes >= PREMIUM_GOALS.horasApp;
+    
+    return isOperadoraElegivel && metaHorasApp;
+  };
+
+  const calculateTotalBonus = (): number => {
+    const baseBonus = checkBonusEligibility() 
+      ? Math.floor(Math.random() * (PREMIUM_BONUS_RANGE.max - PREMIUM_BONUS_RANGE.min + 1)) + PREMIUM_BONUS_RANGE.min
+      : 0;
+    
+    const telefoniaBonus = checkTelefoniaEligibility() ? TELEFONIA_BONUS : 0;
+    
+    return baseBonus + telefoniaBonus;
+  };
+
   const calculateProgress = (current: number, target: number): number => {
     return Math.min((current / target) * 100, 100);
   };
@@ -300,9 +333,12 @@ export function usePremium() {
     currentGoals,
     history,
     partners,
+    operadora,
     subscribeToPremium,
     updateGoals,
     checkBonusEligibility,
+    checkTelefoniaEligibility,
+    calculateTotalBonus,
     calculateProgress,
     getProgressStatus,
     refreshGoals: fetchCurrentGoals,

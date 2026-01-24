@@ -10,7 +10,8 @@ import {
   Trophy,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Smartphone
 } from 'lucide-react';
 import { usePremium } from '@/hooks/usePremium';
 import { cn } from '@/lib/utils';
@@ -154,6 +155,16 @@ export default function PremiumHistory() {
                       <span className="text-muted-foreground">Manutenção:</span>
                       <span className="ml-1 font-medium text-foreground">
                         R$ {item.manutencao_total.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-1">
+                      <Smartphone className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Telefonia:</span>
+                      <span className={cn(
+                        "ml-1 font-medium",
+                        item.beneficio_telefonia ? "text-success" : "text-muted-foreground"
+                      )}>
+                        {item.beneficio_telefonia ? `Sim (+R$ ${item.bonus_telefonia.toFixed(2)})` : 'Não'}
                       </span>
                     </div>
                   </div>
