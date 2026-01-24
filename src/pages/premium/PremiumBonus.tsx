@@ -12,16 +12,17 @@ import {
   Building2,
   CheckCircle,
   XCircle,
-  Info
+  Info,
+  Smartphone
 } from 'lucide-react';
-import { usePremium, PREMIUM_GOALS, PREMIUM_BONUS_RANGE } from '@/hooks/usePremium';
+import { usePremium, PREMIUM_GOALS, PREMIUM_BONUS_RANGE, TELEFONIA_BONUS, OPERADORAS_ELEGIVEIS } from '@/hooks/usePremium';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 export default function PremiumBonus() {
   const navigate = useNavigate();
-  const { isPremium, currentGoals, isLoading, checkBonusEligibility } = usePremium();
+  const { isPremium, currentGoals, isLoading, operadora, checkBonusEligibility, checkTelefoniaEligibility, calculateTotalBonus } = usePremium();
 
   const currentMonth = format(new Date(), 'MMMM yyyy', { locale: ptBR });
 
@@ -50,9 +51,14 @@ export default function PremiumBonus() {
   };
 
   const bonusEligible = checkBonusEligibility();
-  const bonusValue = bonusEligible 
+  const telefoniaEligible = checkTelefoniaEligibility();
+  const isOperadoraElegivel = operadora ? OPERADORAS_ELEGIVEIS.includes(operadora) : false;
+  
+  const baseBonus = bonusEligible 
     ? Math.floor(Math.random() * (PREMIUM_BONUS_RANGE.max - PREMIUM_BONUS_RANGE.min + 1)) + PREMIUM_BONUS_RANGE.min
     : 0;
+  const telefoniaBonus = telefoniaEligible ? TELEFONIA_BONUS : 0;
+  const totalBonus = baseBonus + telefoniaBonus;
 
   const breakdownItems = [
     {
@@ -78,6 +84,13 @@ export default function PremiumBonus() {
       label: 'Banco (Seguro)',
       sublabel: goals.seguro_ativo ? 'Ativo' : 'Inativo',
       achieved: goals.seguro_ativo,
+    },
+    {
+      icon: Smartphone,
+      label: `Telefonia${operadora ? ` (${operadora})` : ''}`,
+      sublabel: telefoniaEligible ? `+R$ ${TELEFONIA_BONUS}` : isOperadoraElegivel ? 'Em progresso' : 'Não configurado',
+      achieved: telefoniaEligible,
+      isOptional: true,
     },
   ];
 
@@ -135,8 +148,13 @@ export default function PremiumBonus() {
 
           <div className="mt-4">
             <span className="text-4xl font-bold text-foreground">
-              R$ {bonusValue.toFixed(2).replace('.', ',')}
+              R$ {totalBonus.toFixed(2).replace('.', ',')}
             </span>
+            {telefoniaBonus > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                (Base: R$ {baseBonus.toFixed(2).replace('.', ',')} + Telefonia: R$ {telefoniaBonus.toFixed(2).replace('.', ',')})
+              </p>
+            )}
           </div>
 
           {bonusEligible && (
