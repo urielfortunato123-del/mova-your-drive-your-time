@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DriverProvider } from "@/contexts/DriverContext";
+import { InstallBanner } from "@/components/InstallBanner";
 
 // Pages
 import Login from "./pages/Login";
@@ -146,6 +147,7 @@ const App = () => (
         <AuthProvider>
           <DriverProvider>
             <AppRoutes />
+            <InstallBanner delay={2000} />
           </DriverProvider>
         </AuthProvider>
       </BrowserRouter>

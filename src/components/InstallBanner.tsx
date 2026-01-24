@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { Button } from '@/components/ui/button';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X, Smartphone, Share, PlusSquare, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import movaCar from '@/assets/mova-car.png';
 
 interface InstallBannerProps {
-  delay?: number; // delay in milliseconds before showing
+  delay?: number;
 }
 
-export function InstallBanner({ delay = 3000 }: InstallBannerProps) {
+export function InstallBanner({ delay = 2000 }: InstallBannerProps) {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    // Check if banner was dismissed in this session
-    const dismissed = sessionStorage.getItem('install-banner-dismissed');
-    if (dismissed) {
-      setIsDismissed(true);
-      return;
+    // Check if banner was dismissed recently (24h)
+    const dismissedAt = localStorage.getItem('install-banner-dismissed-at');
+    if (dismissedAt) {
+      const dismissedTime = parseInt(dismissedAt, 10);
+      const hoursSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60);
+      if (hoursSinceDismissed < 24) {
+        setIsDismissed(true);
+        return;
+      }
     }
 
     // Show banner after delay if not installed
@@ -35,7 +40,7 @@ export function InstallBanner({ delay = 3000 }: InstallBannerProps) {
   const handleDismiss = () => {
     setIsVisible(false);
     setIsDismissed(true);
-    sessionStorage.setItem('install-banner-dismissed', 'true');
+    localStorage.setItem('install-banner-dismissed-at', Date.now().toString());
   };
 
   const handleInstall = async () => {
@@ -53,58 +58,100 @@ export function InstallBanner({ delay = 3000 }: InstallBannerProps) {
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 animate-slide-up">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl p-4 flex items-start gap-3">
-        {/* Icon */}
-        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-          <Smartphone className="w-6 h-6 text-primary-foreground" />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-sm bg-card border border-border rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
+        {/* Header with gradient */}
+        <div className="relative bg-gradient-to-br from-primary to-primary/80 p-6 text-center">
+          <button
+            onClick={handleDismiss}
+            className="absolute top-3 right-3 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          
+          {/* App Icon */}
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-white shadow-lg flex items-center justify-center mb-4 overflow-hidden">
+            <img src={movaCar} alt="MOVA" className="w-16 h-16 object-contain" />
+          </div>
+          
+          <h2 className="text-xl font-bold text-white">Instale o App MOVA</h2>
+          <p className="text-white/80 text-sm mt-1">
+            Acesso rápido direto da sua tela inicial
+          </p>
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-foreground text-sm">Instale o App MOVA</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Acesso rápido e notificações de corridas
-          </p>
+        <div className="p-5 space-y-4">
+          {/* Benefits */}
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              Mais rápido
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5 text-primary" />
+              Offline
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5 text-primary" />
+              Grátis
+            </div>
+          </div>
 
-          <div className="flex gap-2 mt-3">
-            {isInstallable ? (
-              <Button
-                size="sm"
-                onClick={handleInstall}
-                disabled={installing}
-                className="h-8 text-xs px-3"
-              >
-                <Download className="w-3.5 h-3.5 mr-1.5" />
-                {installing ? 'Instalando...' : 'Instalar'}
-              </Button>
-            ) : (
-              <Button size="sm" asChild className="h-8 text-xs px-3">
-                <Link to="/install">
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                  {isIOS ? 'Ver instruções' : 'Instalar'}
+          {/* Install Actions */}
+          {isInstallable ? (
+            <Button
+              onClick={handleInstall}
+              disabled={installing}
+              className="w-full h-12 text-base font-semibold gap-2"
+              size="lg"
+            >
+              <Download className="w-5 h-5" />
+              {installing ? 'Instalando...' : 'Instalar Agora'}
+            </Button>
+          ) : isIOS ? (
+            <div className="space-y-3">
+              <p className="text-sm text-center text-muted-foreground">
+                No Safari, siga os passos:
+              </p>
+              <div className="flex items-center justify-center gap-6 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Share className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Compartilhar</span>
+                </div>
+                <span className="text-muted-foreground">→</span>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <PlusSquare className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Adicionar</span>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/install" onClick={handleDismiss}>
+                  Ver instruções completas
                 </Link>
               </Button>
-            )}
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleDismiss}
-              className="h-8 text-xs px-3 text-muted-foreground"
-            >
-              Agora não
+            </div>
+          ) : (
+            <Button asChild className="w-full h-12 text-base font-semibold gap-2" size="lg">
+              <Link to="/install" onClick={handleDismiss}>
+                <Download className="w-5 h-5" />
+                Ver como instalar
+              </Link>
             </Button>
-          </div>
-        </div>
+          )}
 
-        {/* Close button */}
-        <button
-          onClick={handleDismiss}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-muted transition-colors"
-        >
-          <X className="w-4 h-4 text-muted-foreground" />
-        </button>
+          {/* Dismiss link */}
+          <button
+            onClick={handleDismiss}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+          >
+            Continuar no navegador
+          </button>
+        </div>
       </div>
     </div>
   );
