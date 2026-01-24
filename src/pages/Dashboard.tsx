@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { DailyGoal } from "@/components/dashboard/DailyGoal";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard } from "lucide-react";
+import { usePremium } from "@/hooks/usePremium";
+import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard, Crown, Star } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { dailyStats, todayRides, isOnline, todayOnlineSeconds, toggleOnline, earnings } = useDriver();
   const { driver } = useAuth();
+  const { isPremium } = usePremium();
 
   const nextRide = todayRides
     .filter(r => r.status === 'confirmed')
@@ -122,6 +124,35 @@ export default function Dashboard() {
           goal={DAILY_GOAL} 
           className="animate-slide-up"
         />
+        {/* Premium Banner */}
+        <Link to={isPremium ? "/premium/goals" : "/premium"} className="block animate-slide-up">
+          <div className={cn(
+            "rounded-2xl p-4 hover:shadow-lg transition-shadow",
+            isPremium 
+              ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
+              : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+                  <Crown className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold flex items-center gap-1">
+                    MOVA Premium
+                    {isPremium && <Star className="w-3 h-3 fill-current" />}
+                  </p>
+                  <p className="text-xs opacity-90">
+                    {isPremium ? "Ver suas metas" : "Bônus de até R$ 700/mês"}
+                  </p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5" />
+            </div>
+          </div>
+        </Link>
+
+        {/* Bradesco Banner */}
         <Link to="/bradesco" className="block animate-slide-up">
           <div className="bg-gradient-to-r from-[#CC092F] to-[#8B0620] rounded-2xl p-4 text-white hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">

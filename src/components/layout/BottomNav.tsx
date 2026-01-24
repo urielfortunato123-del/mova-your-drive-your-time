@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Calendar, Map, DollarSign, User } from "lucide-react";
+import { Home, Calendar, Map, DollarSign, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -8,7 +8,7 @@ const navItems = [
   { to: "/rides", icon: Calendar, label: "Corridas" },
   { to: "/map", icon: Map, label: "Mapa" },
   { to: "/earnings", icon: DollarSign, label: "Ganhos" },
-  { to: "/profile", icon: User, label: "Perfil" },
+  { to: "/premium", icon: Crown, label: "Premium" },
 ];
 
 export function BottomNav() {

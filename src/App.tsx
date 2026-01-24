@@ -20,6 +20,14 @@ import BradescoPartner from "./pages/BradescoPartner";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
+// Premium Pages
+import PremiumPresentation from "./pages/premium/PremiumPresentation";
+import PremiumSubscribe from "./pages/premium/PremiumSubscribe";
+import PremiumGoals from "./pages/premium/PremiumGoals";
+import PremiumBonus from "./pages/premium/PremiumBonus";
+import PremiumPartners from "./pages/premium/PremiumPartners";
+import PremiumHistory from "./pages/premium/PremiumHistory";
+
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -84,6 +92,37 @@ function AppRoutes() {
       <Route path="/bradesco" element={
         <ProtectedRoute>
           <BradescoPartner />
+        </ProtectedRoute>
+      } />
+      {/* Premium Routes */}
+      <Route path="/premium" element={
+        <ProtectedRoute>
+          <PremiumPresentation />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/subscribe" element={
+        <ProtectedRoute>
+          <PremiumSubscribe />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/goals" element={
+        <ProtectedRoute>
+          <PremiumGoals />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/bonus" element={
+        <ProtectedRoute>
+          <PremiumBonus />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/partners" element={
+        <ProtectedRoute>
+          <PremiumPartners />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/history" element={
+        <ProtectedRoute>
+          <PremiumHistory />
         </ProtectedRoute>
       } />
       <Route path="/install" element={<Install />} />

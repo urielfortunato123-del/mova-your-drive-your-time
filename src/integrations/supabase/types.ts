@@ -24,7 +24,10 @@ export type Database = {
           name: string
           phone: string | null
           photo: string | null
+          plano: string | null
           plate: string | null
+          premium_inicio: string | null
+          premium_status: string | null
           updated_at: string
           user_id: string
           vehicle: string | null
@@ -38,7 +41,10 @@ export type Database = {
           name: string
           phone?: string | null
           photo?: string | null
+          plano?: string | null
           plate?: string | null
+          premium_inicio?: string | null
+          premium_status?: string | null
           updated_at?: string
           user_id: string
           vehicle?: string | null
@@ -52,10 +58,158 @@ export type Database = {
           name?: string
           phone?: string | null
           photo?: string | null
+          plano?: string | null
           plate?: string | null
+          premium_inicio?: string | null
+          premium_status?: string | null
           updated_at?: string
           user_id?: string
           vehicle?: string | null
+        }
+        Relationships: []
+      }
+      premium_history: {
+        Row: {
+          bonus_recebido: number | null
+          corridas_total: number | null
+          created_at: string | null
+          driver_id: string
+          horas_total: number | null
+          id: string
+          litros_total: number | null
+          manutencao_total: number | null
+          metas_atingidas: boolean | null
+          month_year: string
+          status_final: string | null
+        }
+        Insert: {
+          bonus_recebido?: number | null
+          corridas_total?: number | null
+          created_at?: string | null
+          driver_id: string
+          horas_total?: number | null
+          id?: string
+          litros_total?: number | null
+          manutencao_total?: number | null
+          metas_atingidas?: boolean | null
+          month_year: string
+          status_final?: string | null
+        }
+        Update: {
+          bonus_recebido?: number | null
+          corridas_total?: number | null
+          created_at?: string | null
+          driver_id?: string
+          horas_total?: number | null
+          id?: string
+          litros_total?: number | null
+          manutencao_total?: number | null
+          metas_atingidas?: boolean | null
+          month_year?: string
+          status_final?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_monthly_goals: {
+        Row: {
+          bonus_status: string | null
+          bonus_valor: number | null
+          corridas_mes: number | null
+          created_at: string | null
+          driver_id: string
+          gasto_manutencao_mes: number | null
+          horas_logadas_mes: number | null
+          id: string
+          litros_combustivel_mes: number | null
+          month_year: string
+          seguro_ativo: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          bonus_status?: string | null
+          bonus_valor?: number | null
+          corridas_mes?: number | null
+          created_at?: string | null
+          driver_id: string
+          gasto_manutencao_mes?: number | null
+          horas_logadas_mes?: number | null
+          id?: string
+          litros_combustivel_mes?: number | null
+          month_year: string
+          seguro_ativo?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          bonus_status?: string | null
+          bonus_valor?: number | null
+          corridas_mes?: number | null
+          created_at?: string | null
+          driver_id?: string
+          gasto_manutencao_mes?: number | null
+          horas_logadas_mes?: number | null
+          id?: string
+          litros_combustivel_mes?: number | null
+          month_year?: string
+          seguro_ativo?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_monthly_goals_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_partners: {
+        Row: {
+          cidade: string | null
+          created_at: string | null
+          endereco: string | null
+          id: string
+          is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
+          nome: string
+          servicos: string[] | null
+          tag: string | null
+          tipo: string
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string | null
+          endereco?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          nome: string
+          servicos?: string[] | null
+          tag?: string | null
+          tipo: string
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string | null
+          endereco?: string | null
+          id?: string
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          nome?: string
+          servicos?: string[] | null
+          tag?: string | null
+          tipo?: string
         }
         Relationships: []
       }
