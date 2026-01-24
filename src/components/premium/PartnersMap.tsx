@@ -27,15 +27,49 @@ const createIcon = (color: string, emoji: string) => {
   });
 };
 
-const createDriverIcon = (isTracking: boolean) => L.divIcon({
-  className: 'driver-marker',
-  html: `<div style="background-color: hsl(var(--primary)); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid ${isTracking ? 'hsl(var(--accent))' : 'white'}; box-shadow: 0 2px 12px rgba(0,0,0,0.4); font-size: 22px; position: relative;">
-    📍
-    ${isTracking ? '<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid white; animation: pulse 2s infinite;"></span>' : ''}
-  </div>`,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22],
-});
+const createDriverIcon = (isTracking: boolean, heading: number | null) => {
+  const hasHeading = heading !== null && !isNaN(heading);
+  const arrowRotation = hasHeading ? heading : 0;
+  
+  return L.divIcon({
+    className: 'driver-marker',
+    html: `
+      <div style="position: relative; width: 44px; height: 44px;">
+        ${hasHeading ? `
+          <div style="
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%) rotate(${arrowRotation}deg);
+            transform-origin: center bottom;
+            z-index: 10;
+          ">
+            <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+              <path d="M10 0L20 24L10 18L0 24L10 0Z" fill="hsl(var(--primary))" stroke="white" stroke-width="1.5"/>
+            </svg>
+          </div>
+        ` : ''}
+        <div style="
+          background-color: hsl(var(--primary)); 
+          width: 44px; 
+          height: 44px; 
+          border-radius: 50%; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          border: 4px solid ${isTracking ? 'hsl(142.1, 76.2%, 36.3%)' : 'white'}; 
+          box-shadow: 0 2px 12px rgba(0,0,0,0.4); 
+          font-size: 22px;
+        ">
+          🚗
+          ${isTracking ? '<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid white; animation: pulse 2s infinite;"></span>' : ''}
+        </div>
+      </div>
+    `,
+    iconSize: [44, 60],
+    iconAnchor: [22, 30],
+  });
+};
 
 const postoIcon = createIcon('#f59e0b', '⛽');
 const oficinaIcon = createIcon('#3b82f6', '🔧');
@@ -50,7 +84,7 @@ const getIconForType = (tipo: string) => {
   }
 };
 
-function LocationMarker({ position, isTracking }: { position: [number, number] | null; isTracking: boolean }) {
+function LocationMarker({ position, isTracking, heading }: { position: [number, number] | null; isTracking: boolean; heading: number | null }) {
   const map = useMap();
   const markerRef = useRef<L.Marker>(null);
   const isFirstUpdate = useRef(true);
@@ -62,15 +96,18 @@ function LocationMarker({ position, isTracking }: { position: [number, number] |
         map.setView(position, 13);
         isFirstUpdate.current = false;
       }
-      // Smoothly update marker position
+      // Smoothly update marker position and icon
       if (markerRef.current) {
         markerRef.current.setLatLng(position);
+        markerRef.current.setIcon(createDriverIcon(isTracking, heading));
       }
     }
-  }, [position, map]);
+  }, [position, map, isTracking, heading]);
+  
+  const hasHeading = heading !== null && !isNaN(heading);
   
   return position ? (
-    <Marker ref={markerRef} position={position} icon={createDriverIcon(isTracking)}>
+    <Marker ref={markerRef} position={position} icon={createDriverIcon(isTracking, heading)}>
       <Popup>
         <div className="text-center">
           <strong>Sua localização</strong>
@@ -78,6 +115,11 @@ function LocationMarker({ position, isTracking }: { position: [number, number] |
             <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               Atualizando em tempo real
+            </p>
+          )}
+          {hasHeading && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Direção: {Math.round(heading)}°
             </p>
           )}
         </div>
@@ -92,7 +134,7 @@ interface PartnersMapProps {
 }
 
 export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
-  const { position, loading, isTracking, startTracking, stopTracking } = useGeolocation({ enableRealtime: true });
+  const { position, loading, isTracking, heading, speed, startTracking, stopTracking } = useGeolocation({ enableRealtime: true });
   const [selectedPartner, setSelectedPartner] = useState<PremiumPartner | null>(null);
 
   const filteredPartners = partners.filter(p => 
@@ -142,7 +184,15 @@ export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
           {isTracking ? (
             <>
               <Radio className="w-3.5 h-3.5 text-green-500 animate-pulse" />
-              <span className="text-green-600 font-medium">Localização em tempo real</span>
+              <span className="text-green-600 font-medium">
+                Tempo real
+                {heading !== null && !isNaN(heading) && (
+                  <span className="ml-1 opacity-75">• {Math.round(heading)}°</span>
+                )}
+                {speed !== null && speed > 0 && (
+                  <span className="ml-1 opacity-75">• {Math.round(speed * 3.6)} km/h</span>
+                )}
+              </span>
             </>
           ) : (
             <>
@@ -174,7 +224,7 @@ export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <LocationMarker position={position} isTracking={isTracking} />
+            <LocationMarker position={position} isTracking={isTracking} heading={heading} />
             {mappablePartners.map((partner) => (
               <Marker
                 key={partner.id}
