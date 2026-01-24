@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/card';
@@ -14,11 +14,19 @@ import {
   ExternalLink,
   Star,
   Map,
-  List
+  List,
+  Navigation,
+  Loader2
 } from 'lucide-react';
 import { usePremium, PremiumPartner } from '@/hooks/usePremium';
 import { cn } from '@/lib/utils';
 import { PartnersMap } from '@/components/premium/PartnersMap';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { calculateDistance, formatDistance } from '@/utils/geoUtils';
+
+interface PartnerWithDistance extends PremiumPartner {
+  distance?: number;
+}
 
 const partnerTypes = [
   { value: 'posto', label: 'Postos', icon: Fuel },
@@ -29,15 +37,50 @@ const partnerTypes = [
 export default function PremiumPartners() {
   const navigate = useNavigate();
   const { partners, isLoading } = usePremium();
+  const { position, loading: geoLoading, refresh: refreshLocation } = useGeolocation();
   const [activeTab, setActiveTab] = useState('posto');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  // Calculate distances and sort by proximity
+  const partnersWithDistance = useMemo((): PartnerWithDistance[] => {
+    if (!position) return partners;
+    
+    return partners.map(partner => {
+      if (partner.latitude && partner.longitude) {
+        const distance = calculateDistance(
+          position[0],
+          position[1],
+          partner.latitude,
+          partner.longitude
+        );
+        return { ...partner, distance };
+      }
+      return partner;
+    });
+  }, [partners, position]);
+
+  const filteredPartners = useMemo(() => {
+    const filtered = partnersWithDistance.filter(p => p.tipo === activeTab);
+    // Sort by distance if available
+    return filtered.sort((a, b) => {
+      if (a.distance !== undefined && b.distance !== undefined) {
+        return a.distance - b.distance;
+      }
+      if (a.distance !== undefined) return -1;
+      if (b.distance !== undefined) return 1;
+      return 0;
+    });
+  }, [partnersWithDistance, activeTab]);
 
   const openMaps = (partner: PremiumPartner) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${partner.latitude},${partner.longitude}`;
     window.open(url, '_blank');
   };
 
-  const filteredPartners = partners.filter(p => p.tipo === activeTab);
+  const openNavigation = (partner: PremiumPartner) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${partner.latitude},${partner.longitude}&travelmode=driving`;
+    window.open(url, '_blank');
+  };
 
   if (isLoading) {
     return (
@@ -81,11 +124,29 @@ export default function PremiumPartners() {
           Voltar
         </Button>
 
-        {/* Intro */}
-        <div className="text-center py-2">
+        {/* Intro + Location Status */}
+        <div className="text-center py-2 space-y-2">
           <p className="text-sm text-muted-foreground">
             Parceiros credenciados que contam para suas metas Premium
           </p>
+          <div className="flex items-center justify-center gap-2">
+            {geoLoading ? (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Obtendo localização...
+              </div>
+            ) : position ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refreshLocation}
+                className="text-xs h-7 gap-1.5 text-primary"
+              >
+                <Navigation className="w-3 h-3" />
+                Ordenando por proximidade
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {/* View Toggle */}
@@ -154,19 +215,38 @@ export default function PremiumPartners() {
                               <h3 className="font-semibold text-foreground text-sm">
                                 {partner.nome}
                               </h3>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 flex-shrink-0"
-                                onClick={() => openMaps(partner)}
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </Button>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openNavigation(partner)}
+                                  title="Navegar"
+                                >
+                                  <Navigation className="w-4 h-4 text-primary" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openMaps(partner)}
+                                  title="Ver no mapa"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                             
-                            <div className="flex items-center gap-1 text-muted-foreground text-xs mt-1">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">{partner.endereco}</span>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs min-w-0">
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{partner.endereco}</span>
+                              </div>
+                              {(partner as PartnerWithDistance).distance !== undefined && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex-shrink-0 bg-primary/5 text-primary border-primary/20">
+                                  {formatDistance((partner as PartnerWithDistance).distance!)}
+                                </Badge>
+                              )}
                             </div>
 
                             {partner.servicos && partner.servicos.length > 0 && (
