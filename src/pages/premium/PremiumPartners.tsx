@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft,
   Fuel,
@@ -16,13 +17,22 @@ import {
   Map,
   List,
   Navigation,
-  Loader2
+  Loader2,
+  Filter
 } from 'lucide-react';
 import { usePremium, PremiumPartner } from '@/hooks/usePremium';
 import { cn } from '@/lib/utils';
 import { PartnersMap } from '@/components/premium/PartnersMap';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '@/utils/geoUtils';
+
+const RADIUS_OPTIONS = [
+  { value: 'all', label: 'Todos' },
+  { value: '2', label: '2 km' },
+  { value: '5', label: '5 km' },
+  { value: '10', label: '10 km' },
+  { value: '20', label: '20 km' },
+];
 
 interface PartnerWithDistance extends PremiumPartner {
   distance?: number;
@@ -40,7 +50,7 @@ export default function PremiumPartners() {
   const { position, loading: geoLoading, refresh: refreshLocation } = useGeolocation();
   const [activeTab, setActiveTab] = useState('posto');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-
+  const [radiusFilter, setRadiusFilter] = useState<string>('all');
   // Calculate distances and sort by proximity
   const partnersWithDistance = useMemo((): PartnerWithDistance[] => {
     if (!position) return partners;
@@ -60,7 +70,17 @@ export default function PremiumPartners() {
   }, [partners, position]);
 
   const filteredPartners = useMemo(() => {
-    const filtered = partnersWithDistance.filter(p => p.tipo === activeTab);
+    let filtered = partnersWithDistance.filter(p => p.tipo === activeTab);
+    
+    // Apply radius filter if location is available and not "all"
+    if (position && radiusFilter !== 'all') {
+      const maxDistance = parseFloat(radiusFilter);
+      filtered = filtered.filter(p => {
+        const partnerWithDist = p as PartnerWithDistance;
+        return partnerWithDist.distance !== undefined && partnerWithDist.distance <= maxDistance;
+      });
+    }
+    
     // Sort by distance if available
     return filtered.sort((a, b) => {
       if (a.distance !== undefined && b.distance !== undefined) {
@@ -70,6 +90,10 @@ export default function PremiumPartners() {
       if (b.distance !== undefined) return 1;
       return 0;
     });
+  }, [partnersWithDistance, activeTab, radiusFilter, position]);
+
+  const totalPartnersInType = useMemo(() => {
+    return partnersWithDistance.filter(p => p.tipo === activeTab).length;
   }, [partnersWithDistance, activeTab]);
 
   const openMaps = (partner: PremiumPartner) => {
@@ -149,26 +173,46 @@ export default function PremiumPartners() {
           </div>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-            className="gap-2"
-          >
-            <List className="w-4 h-4" />
-            Lista
-          </Button>
-          <Button
-            variant={viewMode === 'map' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('map')}
-            className="gap-2"
-          >
-            <Map className="w-4 h-4" />
-            Mapa
-          </Button>
+        {/* View Toggle & Radius Filter */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="gap-2"
+            >
+              <List className="w-4 h-4" />
+              Lista
+            </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('map')}
+              className="gap-2"
+            >
+              <Map className="w-4 h-4" />
+              Mapa
+            </Button>
+          </div>
+          
+          {position && (
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={radiusFilter} onValueChange={setRadiusFilter}>
+                <SelectTrigger className="w-[100px] h-8">
+                  <SelectValue placeholder="Raio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RADIUS_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Map View */}
@@ -194,8 +238,20 @@ export default function PremiumPartners() {
                   <Card className="p-8 text-center">
                     <type.icon className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground">
-                      Nenhum parceiro encontrado
+                      {radiusFilter !== 'all' && position 
+                        ? `Nenhum parceiro encontrado em ${radiusFilter} km`
+                        : 'Nenhum parceiro encontrado'}
                     </p>
+                    {radiusFilter !== 'all' && totalPartnersInType > 0 && (
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        onClick={() => setRadiusFilter('all')}
+                        className="mt-2"
+                      >
+                        Ver todos ({totalPartnersInType})
+                      </Button>
+                    )}
                   </Card>
                 ) : (
                   filteredPartners.map(partner => {
