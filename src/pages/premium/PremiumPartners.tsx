@@ -12,10 +12,13 @@ import {
   Building2,
   MapPin,
   ExternalLink,
-  Star
+  Star,
+  Map,
+  List
 } from 'lucide-react';
 import { usePremium, PremiumPartner } from '@/hooks/usePremium';
 import { cn } from '@/lib/utils';
+import { PartnersMap } from '@/components/premium/PartnersMap';
 
 const partnerTypes = [
   { value: 'posto', label: 'Postos', icon: Fuel },
@@ -27,6 +30,7 @@ export default function PremiumPartners() {
   const navigate = useNavigate();
   const { partners, isLoading } = usePremium();
   const [activeTab, setActiveTab] = useState('posto');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   const openMaps = (partner: PremiumPartner) => {
     const url = `https://www.google.com/maps/search/?api=1&query=${partner.latitude},${partner.longitude}`;
@@ -83,6 +87,33 @@ export default function PremiumPartners() {
             Parceiros credenciados que contam para suas metas Premium
           </p>
         </div>
+
+        {/* View Toggle */}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="gap-2"
+          >
+            <List className="w-4 h-4" />
+            Lista
+          </Button>
+          <Button
+            variant={viewMode === 'map' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('map')}
+            className="gap-2"
+          >
+            <Map className="w-4 h-4" />
+            Mapa
+          </Button>
+        </div>
+
+        {/* Map View */}
+        {viewMode === 'map' && (
+          <PartnersMap partners={partners} activeFilter={activeTab} />
+        )}
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
