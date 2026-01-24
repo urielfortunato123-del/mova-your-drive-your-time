@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Navigation, MapPin, ExternalLink, Star } from 'lucide-react';
+import { Loader2, Navigation, MapPin, Star, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { PremiumPartner } from '@/hooks/usePremium';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 // Fix Leaflet default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -26,9 +27,12 @@ const createIcon = (color: string, emoji: string) => {
   });
 };
 
-const driverIcon = L.divIcon({
+const createDriverIcon = (isTracking: boolean) => L.divIcon({
   className: 'driver-marker',
-  html: `<div style="background-color: hsl(var(--primary)); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid hsl(var(--accent)); box-shadow: 0 2px 12px rgba(0,0,0,0.4); font-size: 22px;">📍</div>`,
+  html: `<div style="background-color: hsl(var(--primary)); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid ${isTracking ? 'hsl(var(--accent))' : 'white'}; box-shadow: 0 2px 12px rgba(0,0,0,0.4); font-size: 22px; position: relative;">
+    📍
+    ${isTracking ? '<span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid white; animation: pulse 2s infinite;"></span>' : ''}
+  </div>`,
   iconSize: [44, 44],
   iconAnchor: [22, 22],
 });
@@ -46,19 +50,37 @@ const getIconForType = (tipo: string) => {
   }
 };
 
-function LocationMarker({ position }: { position: [number, number] | null }) {
+function LocationMarker({ position, isTracking }: { position: [number, number] | null; isTracking: boolean }) {
   const map = useMap();
+  const markerRef = useRef<L.Marker>(null);
+  const isFirstUpdate = useRef(true);
   
   useEffect(() => {
     if (position) {
-      map.setView(position, 13);
+      // Only center on first load, not on every update
+      if (isFirstUpdate.current) {
+        map.setView(position, 13);
+        isFirstUpdate.current = false;
+      }
+      // Smoothly update marker position
+      if (markerRef.current) {
+        markerRef.current.setLatLng(position);
+      }
     }
   }, [position, map]);
   
   return position ? (
-    <Marker position={position} icon={driverIcon}>
+    <Marker ref={markerRef} position={position} icon={createDriverIcon(isTracking)}>
       <Popup>
-        <strong>Sua localização</strong>
+        <div className="text-center">
+          <strong>Sua localização</strong>
+          {isTracking && (
+            <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              Atualizando em tempo real
+            </p>
+          )}
+        </div>
       </Popup>
     </Marker>
   ) : null;
@@ -70,31 +92,8 @@ interface PartnersMapProps {
 }
 
 export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { position, loading, isTracking, startTracking, stopTracking } = useGeolocation({ enableRealtime: true });
   const [selectedPartner, setSelectedPartner] = useState<PremiumPartner | null>(null);
-
-  useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setPosition([pos.coords.latitude, pos.coords.longitude]);
-          setLoading(false);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          // Default to São Paulo if location not available
-          setPosition([-23.5505, -46.6333]);
-          setLoading(false);
-          toast.error('Não foi possível obter sua localização');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setPosition([-23.5505, -46.6333]);
-      setLoading(false);
-    }
-  }, []);
 
   const filteredPartners = partners.filter(p => 
     activeFilter === 'all' || p.tipo === activeFilter
@@ -137,6 +136,32 @@ export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
 
   return (
     <div className="space-y-3">
+      {/* Tracking Toggle */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {isTracking ? (
+            <>
+              <Radio className="w-3.5 h-3.5 text-green-500 animate-pulse" />
+              <span className="text-green-600 font-medium">Localização em tempo real</span>
+            </>
+          ) : (
+            <>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Localização estática</span>
+            </>
+          )}
+        </div>
+        <Button
+          variant={isTracking ? "default" : "outline"}
+          size="sm"
+          onClick={() => isTracking ? stopTracking() : startTracking()}
+          className="h-7 text-xs gap-1.5"
+        >
+          <Radio className="w-3 h-3" />
+          {isTracking ? 'Parar' : 'Tempo real'}
+        </Button>
+      </div>
+
       <div className="rounded-xl overflow-hidden shadow-md h-[35vh] relative">
         {position && (
           <MapContainer
@@ -149,7 +174,7 @@ export function PartnersMap({ partners, activeFilter }: PartnersMapProps) {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <LocationMarker position={position} />
+            <LocationMarker position={position} isTracking={isTracking} />
             {mappablePartners.map((partner) => (
               <Marker
                 key={partner.id}
