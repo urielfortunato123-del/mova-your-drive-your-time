@@ -113,6 +113,11 @@ export function DailyGoal({ current, goal, className }: DailyGoalProps) {
               </span>
             )}
           </div>
+          
+          {/* Connection to monthly bonus */}
+          <p className="text-xs text-muted-foreground text-center mt-3 pt-3 border-t border-border/50">
+            📌 Essa meta te aproxima do bônus mensal.
+          </p>
         </div>
       </CardContent>
     </Card>

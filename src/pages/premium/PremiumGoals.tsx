@@ -11,14 +11,34 @@ import {
   Wrench, 
   Shield,
   Trophy,
-  ArrowRight,
-  Crown,
   Smartphone
 } from 'lucide-react';
 import { usePremium, PREMIUM_GOALS, OPERADORAS_ELEGIVEIS } from '@/hooks/usePremium';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { GoalStatusBadge, getGoalStatus, getStatusConfig } from '@/components/premium/GoalStatusBadge';
+import { NextStepBlock } from '@/components/premium/NextStepBlock';
+
+// Goal icons mapping
+const GOAL_ICONS = {
+  corridas: Car,
+  horas: Clock,
+  combustivel: Fuel,
+  manutencao: Wrench,
+  seguro: Shield,
+  telefonia: Smartphone,
+} as const;
+
+// Microcopy for goals
+const GOAL_MICROCOPY = {
+  corridas: 'Conta para o bônus mensal',
+  horas: 'Conta para o bônus mensal',
+  combustivel: 'Conta para o bônus mensal',
+  manutencao: 'Conta para o bônus mensal',
+  seguro: 'Requisito obrigatório',
+  telefonia: 'Benefício ativo',
+} as const;
 
 export default function PremiumGoals() {
   const navigate = useNavigate();
@@ -28,7 +48,6 @@ export default function PremiumGoals() {
     isLoading, 
     operadora,
     calculateProgress, 
-    getProgressStatus,
     checkBonusEligibility,
     checkTelefoniaEligibility
   } = usePremium();
@@ -61,55 +80,43 @@ export default function PremiumGoals() {
 
   const progressItems = [
     {
-      icon: Car,
-      label: 'Corridas',
+      key: 'corridas' as const,
+      icon: GOAL_ICONS.corridas,
+      label: 'Produção',
       current: goals.corridas_mes,
       target: PREMIUM_GOALS.corridas,
       unit: 'corridas',
-      status: getProgressStatus(goals.corridas_mes, PREMIUM_GOALS.corridas),
+      microcopy: GOAL_MICROCOPY.corridas,
     },
     {
-      icon: Clock,
+      key: 'horas' as const,
+      icon: GOAL_ICONS.horas,
       label: 'Horas logado',
       current: goals.horas_logadas_mes,
       target: PREMIUM_GOALS.horas,
       unit: 'horas',
-      status: getProgressStatus(goals.horas_logadas_mes, PREMIUM_GOALS.horas),
+      microcopy: GOAL_MICROCOPY.horas,
     },
     {
-      icon: Fuel,
+      key: 'combustivel' as const,
+      icon: GOAL_ICONS.combustivel,
       label: 'Combustível (parceiros)',
       current: goals.litros_combustivel_mes,
       target: PREMIUM_GOALS.litros,
       unit: 'litros',
-      status: getProgressStatus(goals.litros_combustivel_mes, PREMIUM_GOALS.litros),
+      microcopy: GOAL_MICROCOPY.combustivel,
     },
     {
-      icon: Wrench,
+      key: 'manutencao' as const,
+      icon: GOAL_ICONS.manutencao,
       label: 'Manutenção',
       current: goals.gasto_manutencao_mes,
       target: PREMIUM_GOALS.manutencao,
       unit: 'R$',
       prefix: 'R$',
-      status: getProgressStatus(goals.gasto_manutencao_mes, PREMIUM_GOALS.manutencao),
+      microcopy: GOAL_MICROCOPY.manutencao,
     },
   ];
-
-  const getStatusColor = (status: 'red' | 'yellow' | 'green') => {
-    switch (status) {
-      case 'green': return 'bg-success';
-      case 'yellow': return 'bg-warning';
-      case 'red': return 'bg-destructive';
-    }
-  };
-
-  const getStatusBg = (status: 'red' | 'yellow' | 'green') => {
-    switch (status) {
-      case 'green': return 'bg-success/10';
-      case 'yellow': return 'bg-warning/10';
-      case 'red': return 'bg-destructive/10';
-    }
-  };
 
   const bonusEligible = checkBonusEligibility();
   const telefoniaEligible = checkTelefoniaEligibility();
@@ -122,7 +129,7 @@ export default function PremiumGoals() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-yellow-500" />
+              <Trophy className="w-5 h-5 text-yellow-500" />
               <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
                 MOVA Premium
               </span>
@@ -147,16 +154,16 @@ export default function PremiumGoals() {
           "p-4",
           bonusEligible 
             ? "bg-gradient-to-r from-success/10 to-success/5 border-success/30" 
-            : "bg-gradient-to-r from-warning/10 to-warning/5 border-warning/30"
+            : "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30"
         )}>
           <div className="flex items-center gap-3">
             <div className={cn(
               "p-2 rounded-xl",
-              bonusEligible ? "bg-success/20" : "bg-warning/20"
+              bonusEligible ? "bg-success/20" : "bg-primary/20"
             )}>
               <Trophy className={cn(
                 "w-5 h-5",
-                bonusEligible ? "text-success" : "text-warning"
+                bonusEligible ? "text-success" : "text-primary"
               )} />
             </div>
             <div className="flex-1">
@@ -172,21 +179,26 @@ export default function PremiumGoals() {
           </div>
         </Card>
 
+        {/* Next Step Block */}
+        {!bonusEligible && <NextStepBlock />}
+
         {/* Progress Cards */}
         <div className="space-y-3">
-          {progressItems.map((item, index) => {
+          {progressItems.map((item) => {
             const progress = calculateProgress(item.current, item.target);
+            const status = getGoalStatus({
+              current: item.current,
+              target: item.target,
+              isMonthEnded: false,
+            });
+            const statusConfig = getStatusConfig(status);
+            
             return (
-              <Card key={index} className="p-4">
+              <Card key={item.key} className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-xl", getStatusBg(item.status))}>
-                      <item.icon className={cn(
-                        "w-5 h-5",
-                        item.status === 'green' && "text-success",
-                        item.status === 'yellow' && "text-warning",
-                        item.status === 'red' && "text-destructive"
-                      )} />
+                    <div className={cn("p-2 rounded-xl", statusConfig.bgColor)}>
+                      <item.icon className={cn("w-5 h-5", statusConfig.iconColor)} />
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm">{item.label}</p>
@@ -206,8 +218,17 @@ export default function PremiumGoals() {
                 </div>
                 <Progress 
                   value={progress} 
-                  className={cn("h-2", getStatusBg(item.status))}
+                  className={cn("h-2", statusConfig.bgColor)}
                 />
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[10px] text-muted-foreground">{item.microcopy}</p>
+                  <GoalStatusBadge
+                    current={item.current}
+                    target={item.target}
+                    isMonthEnded={false}
+                    className="text-[10px]"
+                  />
+                </div>
               </Card>
             );
           })}
@@ -218,26 +239,25 @@ export default function PremiumGoals() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "p-2 rounded-xl",
-                  goals.seguro_ativo ? "bg-success/10" : "bg-destructive/10"
+                  goals.seguro_ativo ? "bg-success/10" : "bg-warning/10"
                 )}>
                   <Shield className={cn(
                     "w-5 h-5",
-                    goals.seguro_ativo ? "text-success" : "text-destructive"
+                    goals.seguro_ativo ? "text-success" : "text-warning"
                   )} />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-sm">Seguro veicular</p>
-                  <p className="text-xs text-muted-foreground">Obrigatório para o bônus</p>
+                  <p className="font-medium text-foreground text-sm">Banco / Seguro</p>
+                  <p className="text-xs text-muted-foreground">{GOAL_MICROCOPY.seguro}</p>
                 </div>
               </div>
-              <div className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium",
-                goals.seguro_ativo 
-                  ? "bg-success/10 text-success" 
-                  : "bg-destructive/10 text-destructive"
-              )}>
-                {goals.seguro_ativo ? 'Ativo' : 'Inativo'}
-              </div>
+              <GoalStatusBadge
+                current={0}
+                target={1}
+                isMonthEnded={false}
+                isRequirement={true}
+                requirementMet={goals.seguro_ativo}
+              />
             </div>
           </Card>
         </div>
@@ -251,11 +271,11 @@ export default function PremiumGoals() {
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-xl",
-                telefoniaEligible ? "bg-success/10" : isOperadoraElegivel ? "bg-warning/10" : "bg-muted"
+                telefoniaEligible ? "bg-success/10" : isOperadoraElegivel ? "bg-primary/10" : "bg-muted"
               )}>
                 <Smartphone className={cn(
                   "w-5 h-5",
-                  telefoniaEligible ? "text-success" : isOperadoraElegivel ? "text-warning" : "text-muted-foreground"
+                  telefoniaEligible ? "text-success" : isOperadoraElegivel ? "text-primary" : "text-muted-foreground"
                 )} />
               </div>
               <div>
@@ -265,17 +285,17 @@ export default function PremiumGoals() {
                 </p>
               </div>
             </div>
-            <div className={cn(
-              "px-3 py-1 rounded-full text-xs font-medium",
-              telefoniaEligible 
-                ? "bg-success/10 text-success" 
-                : isOperadoraElegivel
-                  ? "bg-warning/10 text-warning"
-                  : "bg-muted text-muted-foreground"
-            )}>
-              {telefoniaEligible ? 'Ativo' : isOperadoraElegivel ? 'Em progresso' : 'Configurar'}
-            </div>
+            <GoalStatusBadge
+              current={0}
+              target={1}
+              isMonthEnded={false}
+              isRequirement={true}
+              requirementMet={telefoniaEligible}
+            />
           </div>
+          <p className="text-[10px] text-muted-foreground mt-2 ml-12">
+            {telefoniaEligible ? GOAL_MICROCOPY.telefonia : 'Conta para o bônus mensal'}
+          </p>
         </Card>
 
         {/* Quick Actions */}

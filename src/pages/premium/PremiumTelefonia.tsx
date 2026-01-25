@@ -122,9 +122,12 @@ export default function PremiumTelefonia() {
           <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
             <Smartphone className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground">Benefícios em Telefonia</h2>
-          <p className="text-sm text-muted-foreground mt-2">
-            Use seu plano atual e ganhe benefícios exclusivos no MOVA Premium.
+          <h2 className="text-xl font-bold text-foreground">Seu plano continua o mesmo.</h2>
+          <h3 className="text-lg font-semibold text-primary mt-1">Sua conta diminui.</h3>
+          <p className="text-sm text-muted-foreground mt-3">
+            Você não troca número nem chip.
+            <br />
+            O benefício é aplicado diretamente ao seu plano atual.
           </p>
         </div>
 
