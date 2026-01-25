@@ -86,6 +86,11 @@ export default function PremiumHistory() {
             <p className="text-sm text-muted-foreground mt-1">
               Seu histórico de metas aparecerá aqui ao final de cada mês.
             </p>
+            <p className="text-xs text-muted-foreground mt-4 px-4 py-3 bg-muted/50 rounded-lg">
+              Assim que o mês fechar, você verá aqui
+              <br />
+              quanto o MOVA já devolveu para você.
+            </p>
           </Card>
         ) : (
           <div className="space-y-3">

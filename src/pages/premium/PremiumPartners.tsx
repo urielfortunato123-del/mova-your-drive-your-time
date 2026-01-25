@@ -13,7 +13,6 @@ import {
   Building2,
   MapPin,
   ExternalLink,
-  Star,
   Map,
   List,
   Navigation,
@@ -25,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { PartnersMap } from '@/components/premium/PartnersMap';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '@/utils/geoUtils';
+import { PartnerTags, getPartnerTags } from '@/components/premium/PartnerTags';
 
 const RADIUS_OPTIONS = [
   { value: 'all', label: 'Todos' },
@@ -320,14 +320,11 @@ export default function PremiumPartners() {
                               </div>
                             )}
 
-                            {partner.tag && (
-                              <div className="flex items-center gap-1 mt-2">
-                                <Star className="w-3 h-3 text-warning fill-warning" />
-                                <span className="text-xs text-warning font-medium">
-                                  {partner.tag}
-                                </span>
-                              </div>
-                            )}
+                            {/* Partner Tags */}
+                            <PartnerTags 
+                              tags={getPartnerTags(partner.id, partner.tipo)} 
+                              className="mt-2"
+                            />
                           </div>
                         </div>
                       </Card>
