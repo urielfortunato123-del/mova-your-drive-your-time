@@ -19,6 +19,8 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { GoalStatusBadge, getGoalStatus, getStatusConfig } from '@/components/premium/GoalStatusBadge';
 import { NextStepBlock } from '@/components/premium/NextStepBlock';
+import { GoalProximityAlerts } from '@/components/premium/GoalProximityAlerts';
+import { usePremiumGoalNotifications } from '@/hooks/usePremiumGoalNotifications';
 
 // Goal icons mapping
 const GOAL_ICONS = {
@@ -181,6 +183,9 @@ export default function PremiumGoals() {
 
         {/* Next Step Block */}
         {!bonusEligible && <NextStepBlock />}
+
+        {/* Goal Proximity Alerts */}
+        <GoalProximityAlerts />
 
         {/* Progress Cards */}
         <div className="space-y-3">
