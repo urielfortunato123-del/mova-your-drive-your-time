@@ -28,6 +28,7 @@ import PremiumGoals from "./pages/premium/PremiumGoals";
 import PremiumBonus from "./pages/premium/PremiumBonus";
 import PremiumPartners from "./pages/premium/PremiumPartners";
 import PremiumHistory from "./pages/premium/PremiumHistory";
+import PremiumBonusHistory from "./pages/premium/PremiumBonusHistory";
 import PremiumTelefonia from "./pages/premium/PremiumTelefonia";
 
 const queryClient = new QueryClient();
@@ -130,6 +131,11 @@ function AppRoutes() {
       <Route path="/premium/telefonia" element={
         <ProtectedRoute>
           <PremiumTelefonia />
+        </ProtectedRoute>
+      } />
+      <Route path="/premium/bonus/history" element={
+        <ProtectedRoute>
+          <PremiumBonusHistory />
         </ProtectedRoute>
       } />
       <Route path="/install" element={<Install />} />
