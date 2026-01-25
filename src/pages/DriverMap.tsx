@@ -88,97 +88,86 @@ interface FuelStation {
   updatedAt: string;
 }
 
-// Simulated POIs - in production would come from an API
-const generatePOIs = (userLat: number, userLng: number): PointOfInterest[] => {
+// Calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const formatDistance = (distanceKm: number): string => {
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)}m`;
+  }
+  return `${distanceKm.toFixed(1)}km`;
+};
+
+// Additional POIs that complement the database partners
+const generateExtraPOIs = (userLat: number, userLng: number): PointOfInterest[] => {
   return [
     {
-      id: "1",
-      name: "Posto Shell",
-      type: "gas",
-      lat: userLat + 0.008,
-      lng: userLng + 0.005,
-      distance: "850m",
-      address: "Av. Paulista, 1000",
-      open24h: true,
-      fuelPrices: {
-        gasolina: 5.89,
-        etanol: 3.99,
-        diesel: 5.49,
-      },
-    },
-    {
-      id: "2",
-      name: "Posto Ipiranga",
-      type: "gas",
-      lat: userLat - 0.006,
-      lng: userLng + 0.010,
-      distance: "1.2km",
-      address: "Rua Augusta, 500",
-      open24h: true,
-      fuelPrices: {
-        gasolina: 5.79,
-        etanol: 3.89,
-        diesel: 5.39,
-      },
-    },
-    {
-      id: "3",
+      id: "extra-rest-1",
       name: "Café do Motorista",
       type: "rest",
       lat: userLat + 0.004,
       lng: userLng - 0.007,
-      distance: "650m",
+      distance: formatDistance(calculateDistance(userLat, userLng, userLat + 0.004, userLng - 0.007)),
       address: "Rua Consolação, 200",
       open24h: false,
     },
     {
-      id: "4",
+      id: "extra-rest-2",
       name: "Lanchonete 24h",
       type: "rest",
       lat: userLat - 0.009,
       lng: userLng - 0.003,
-      distance: "1.0km",
+      distance: formatDistance(calculateDistance(userLat, userLng, userLat - 0.009, userLng - 0.003)),
       address: "Av. Rebouças, 800",
       open24h: true,
     },
     {
-      id: "5",
-      name: "Banheiro Público",
+      id: "extra-bathroom-1",
+      name: "Banheiro Público - Praça da Sé",
       type: "bathroom",
-      lat: userLat + 0.002,
-      lng: userLng + 0.008,
-      distance: "400m",
-      address: "Praça da Sé",
+      lat: -23.5505,
+      lng: -46.6340,
+      distance: formatDistance(calculateDistance(userLat, userLng, -23.5505, -46.6340)),
+      address: "Praça da Sé, Centro",
       open24h: false,
     },
     {
-      id: "6",
-      name: "Shopping Banheiro",
+      id: "extra-bathroom-2",
+      name: "Shopping Ibirapuera - Banheiros",
       type: "bathroom",
-      lat: userLat - 0.005,
-      lng: userLng + 0.006,
-      distance: "750m",
-      address: "Shopping Center Norte",
+      lat: -23.6109,
+      lng: -46.6654,
+      distance: formatDistance(calculateDistance(userLat, userLng, -23.6109, -46.6654)),
+      address: "Av. Ibirapuera, 3103 - Moema",
       open24h: false,
     },
     {
-      id: "7",
+      id: "extra-parking-1",
       name: "Estacionamento Centro",
       type: "parking",
-      lat: userLat + 0.007,
-      lng: userLng - 0.004,
-      distance: "900m",
-      address: "Rua Direita, 100",
+      lat: -23.5489,
+      lng: -46.6388,
+      distance: formatDistance(calculateDistance(userLat, userLng, -23.5489, -46.6388)),
+      address: "Rua Direita, 100 - Centro",
       open24h: true,
     },
     {
-      id: "8",
-      name: "Área de Descanso",
+      id: "extra-parking-2",
+      name: "Área de Descanso Marginal",
       type: "parking",
-      lat: userLat - 0.003,
-      lng: userLng - 0.009,
-      distance: "1.1km",
-      address: "Marginal Pinheiros",
+      lat: -23.5673,
+      lng: -46.7012,
+      distance: formatDistance(calculateDistance(userLat, userLng, -23.5673, -46.7012)),
+      address: "Marginal Pinheiros, km 15",
       open24h: true,
     },
   ];
@@ -261,8 +250,71 @@ export default function DriverMap() {
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [favorites, setFavorites] = useState<string[]>(getFavorites);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [fuelDataSource, setFuelDataSource] = useState<"api" | "mock">("mock");
+  const [fuelDataSource, setFuelDataSource] = useState<"api" | "database" | "mock">("database");
   const [loadingFuel, setLoadingFuel] = useState(false);
+
+  // Fetch gas stations from database (premium_partners)
+  const fetchGasStationsFromDB = async (userLat: number, userLng: number): Promise<PointOfInterest[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('premium_partners')
+        .select('*')
+        .eq('tipo', 'posto')
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      const stations: PointOfInterest[] = (data || [])
+        .filter(partner => partner.latitude && partner.longitude)
+        .map(partner => {
+          const distance = calculateDistance(
+            userLat, 
+            userLng, 
+            Number(partner.latitude), 
+            Number(partner.longitude)
+          );
+          
+          // Parse fuel types from services
+          const services = partner.servicos || [];
+          const fuelPrices: FuelPrices = {};
+          if (services.some((s: string) => s.toLowerCase().includes('gasolina'))) {
+            fuelPrices.gasolina = 5.79 + Math.random() * 0.3; // Simulated prices
+          }
+          if (services.some((s: string) => s.toLowerCase().includes('etanol'))) {
+            fuelPrices.etanol = 3.89 + Math.random() * 0.2;
+          }
+          if (services.some((s: string) => s.toLowerCase().includes('diesel'))) {
+            fuelPrices.diesel = 5.49 + Math.random() * 0.3;
+          }
+          if (services.some((s: string) => s.toLowerCase().includes('gnv'))) {
+            fuelPrices.gnv = 4.29 + Math.random() * 0.2;
+          }
+
+          return {
+            id: partner.id,
+            name: partner.nome,
+            type: "gas" as const,
+            lat: Number(partner.latitude),
+            lng: Number(partner.longitude),
+            distance: formatDistance(distance),
+            address: partner.endereco || '',
+            open24h: partner.tag?.toLowerCase().includes('24h') || false,
+            fuelPrices,
+            brand: partner.tag || 'Parceiro MOVA',
+          };
+        })
+        .sort((a, b) => {
+          const distA = parseFloat(a.distance?.replace('km', '').replace('m', '') || '0');
+          const distB = parseFloat(b.distance?.replace('km', '').replace('m', '') || '0');
+          return distA - distB;
+        });
+
+      return stations;
+    } catch (error) {
+      console.error('Error fetching gas stations from DB:', error);
+      return [];
+    }
+  };
 
   const toggleFavorite = (poiId: string) => {
     setFavorites(prev => {
@@ -318,14 +370,26 @@ export default function DriverMap() {
           const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
           setPosition(coords);
           
-          // Fetch fuel prices from edge function
-          const fuelStations = await fetchFuelPrices(coords[0], coords[1]);
+          // Fetch gas stations from database
+          setLoadingFuel(true);
+          const dbStations = await fetchGasStationsFromDB(coords[0], coords[1]);
           
-          // Get other POIs (rest, bathroom, parking) from local data
-          const otherPois = generatePOIs(coords[0], coords[1]).filter(p => p.type !== "gas");
+          if (dbStations.length > 0) {
+            setFuelDataSource("database");
+          } else {
+            // Fallback to edge function if no DB data
+            const apiStations = await fetchFuelPrices(coords[0], coords[1]);
+            if (apiStations.length > 0) {
+              dbStations.push(...apiStations);
+            }
+          }
+          setLoadingFuel(false);
           
-          // Combine fuel stations with other POIs
-          setPois([...fuelStations, ...otherPois]);
+          // Get other POIs (rest, bathroom, parking) from extra data
+          const otherPois = generateExtraPOIs(coords[0], coords[1]);
+          
+          // Combine all POIs
+          setPois([...dbStations, ...otherPois]);
           setLoading(false);
         },
         async (error) => {
@@ -333,9 +397,18 @@ export default function DriverMap() {
           const defaultCoords: [number, number] = [-23.5505, -46.6333];
           setPosition(defaultCoords);
           
-          const fuelStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
-          const otherPois = generatePOIs(defaultCoords[0], defaultCoords[1]).filter(p => p.type !== "gas");
-          setPois([...fuelStations, ...otherPois]);
+          setLoadingFuel(true);
+          const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
+          if (dbStations.length === 0) {
+            const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+            dbStations.push(...apiStations);
+          } else {
+            setFuelDataSource("database");
+          }
+          setLoadingFuel(false);
+          
+          const otherPois = generateExtraPOIs(defaultCoords[0], defaultCoords[1]);
+          setPois([...dbStations, ...otherPois]);
           
           setLoading(false);
           toast.error("Não foi possível obter sua localização. Usando localização padrão.");
@@ -346,9 +419,18 @@ export default function DriverMap() {
       const defaultCoords: [number, number] = [-23.5505, -46.6333];
       setPosition(defaultCoords);
       
-      const fuelStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
-      const otherPois = generatePOIs(defaultCoords[0], defaultCoords[1]).filter(p => p.type !== "gas");
-      setPois([...fuelStations, ...otherPois]);
+      setLoadingFuel(true);
+      const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
+      if (dbStations.length === 0) {
+        const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+        dbStations.push(...apiStations);
+      } else {
+        setFuelDataSource("database");
+      }
+      setLoadingFuel(false);
+      
+      const otherPois = generateExtraPOIs(defaultCoords[0], defaultCoords[1]);
+      setPois([...dbStations, ...otherPois]);
       
       setLoading(false);
     }
@@ -396,8 +478,13 @@ export default function DriverMap() {
         {/* Data source indicator */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {fuelDataSource === "api" ? (
+            {fuelDataSource === "database" ? (
               <Badge variant="outline" className="text-xs gap-1 text-green-600 border-green-300">
+                <Wifi className="w-3 h-3" />
+                Parceiros MOVA
+              </Badge>
+            ) : fuelDataSource === "api" ? (
+              <Badge variant="outline" className="text-xs gap-1 text-blue-600 border-blue-300">
                 <Wifi className="w-3 h-3" />
                 API Real
               </Badge>
