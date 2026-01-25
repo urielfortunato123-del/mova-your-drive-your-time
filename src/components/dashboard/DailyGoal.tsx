@@ -17,30 +17,51 @@ export function DailyGoal({ current, goal, className }: DailyGoalProps) {
   const remaining = Math.max(goal - current, 0);
   const isCompleted = current >= goal;
   
-  const { permission, notifyGoalReached } = useNotifications();
-  const hasNotifiedRef = useRef(false);
-  const previousCompletedRef = useRef(false);
+  const { permission, notifyGoalReached, sendNotification } = useNotifications();
+  const notifiedMilestonesRef = useRef<Set<number>>(new Set());
+  const previousPercentageRef = useRef(0);
 
-  // Track goal completion and send notification
+  // Milestone notifications (50%, 75%, 100%)
   useEffect(() => {
-    // Only notify when transitioning from incomplete to complete
-    if (isCompleted && !previousCompletedRef.current && !hasNotifiedRef.current) {
-      hasNotifiedRef.current = true;
-      
-      // Send push notification if permission granted
-      if (permission === 'granted') {
-        notifyGoalReached(current, goal);
+    const milestones = [
+      { threshold: 50, emoji: '💪', message: 'Você está na metade! Continue assim!' },
+      { threshold: 75, emoji: '🔥', message: 'Quase lá! Faltam só 25% para bater sua meta!' },
+      { threshold: 100, emoji: '🎉', message: `Parabéns! Você alcançou R$ ${current.toFixed(0)} hoje!` },
+    ];
+
+    for (const milestone of milestones) {
+      // Only trigger if crossing the threshold upward and not already notified
+      if (
+        percentage >= milestone.threshold &&
+        previousPercentageRef.current < milestone.threshold &&
+        !notifiedMilestonesRef.current.has(milestone.threshold)
+      ) {
+        notifiedMilestonesRef.current.add(milestone.threshold);
+
+        // Send push notification if permission granted
+        if (permission === 'granted') {
+          if (milestone.threshold === 100) {
+            notifyGoalReached(current, goal);
+          } else {
+            sendNotification(`${milestone.emoji} ${milestone.threshold}% da Meta!`, {
+              body: milestone.message,
+              tag: `goal-progress-${milestone.threshold}`,
+              data: { type: 'goal-progress', percentage: milestone.threshold },
+            });
+          }
+        }
+
+        // Show in-app toast
+        const toastType = milestone.threshold === 100 ? 'success' : 'info';
+        toast[toastType](`${milestone.emoji} ${milestone.threshold}% da Meta!`, {
+          description: milestone.message,
+          duration: 4000,
+        });
       }
-      
-      // Also show in-app toast for immediate feedback
-      toast.success('🎉 Meta Diária Atingida!', {
-        description: `Parabéns! Você alcançou R$ ${current.toFixed(0)} hoje!`,
-        duration: 5000,
-      });
     }
-    
-    previousCompletedRef.current = isCompleted;
-  }, [isCompleted, current, goal, permission, notifyGoalReached]);
+
+    previousPercentageRef.current = percentage;
+  }, [percentage, current, goal, permission, notifyGoalReached, sendNotification]);
 
   return (
     <Card className={cn("overflow-hidden", className)}>
