@@ -15,13 +15,13 @@ import {
   MapPin,
   Loader2,
   RefreshCw,
-  Star,
   Heart,
   Wifi,
-  WifiOff
+  WifiOff,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useFuelPrices, PointOfInterest, RegionalAverages } from "@/hooks/useFuelPrices";
 
 // Fix Leaflet default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -52,1366 +52,6 @@ const gasIcon = createIcon("#ef4444", "⛽");
 const restIcon = createIcon("#3b82f6", "☕");
 const bathroomIcon = createIcon("#8b5cf6", "🚻");
 const parkingIcon = createIcon("#10b981", "🅿️");
-
-interface FuelPrices {
-  gasolina?: number;
-  etanol?: number;
-  diesel?: number;
-  gnv?: number;
-}
-
-interface RegionalAverages {
-  gasolina: number;
-  etanol: number;
-  diesel: number;
-  gnv: number;
-}
-
-interface PointOfInterest {
-  id: string;
-  name: string;
-  type: "gas" | "rest" | "bathroom" | "parking";
-  lat: number;
-  lng: number;
-  distance?: string;
-  address?: string;
-  open24h?: boolean;
-  fuelPrices?: FuelPrices;
-  brand?: string;
-  updatedAt?: string;
-  priceSource?: string;
-  state?: string;
-}
-
-interface FuelStation {
-  id: string;
-  name: string;
-  brand: string;
-  lat: number;
-  lng: number;
-  address: string;
-  city: string;
-  state: string;
-  open24h: boolean;
-  prices: FuelPrices;
-  distance: string;
-  updatedAt: string;
-  priceSource: string;
-}
-
-// Calculate distance between two coordinates (Haversine formula)
-const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-const formatDistance = (distanceKm: number): string => {
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)}m`;
-  }
-  return `${distanceKm.toFixed(1)}km`;
-};
-
-// POIs reais pelo Brasil - Postos, Cafés, Banheiros, Áreas de Descanso
-const getAllBrazilPOIs = (userLat: number, userLng: number): PointOfInterest[] => {
-  const allPOIs: Omit<PointOfInterest, 'distance'>[] = [
-    // ============ SÃO PAULO - CAPITAL ============
-    // Postos de Combustível
-    {
-      id: "gas-sp-shell-paulista",
-      name: "Posto Shell - Av. Paulista",
-      type: "gas",
-      lat: -23.5611,
-      lng: -46.6559,
-      address: "Av. Paulista, 1000 - Bela Vista, São Paulo",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.89, etanol: 3.99, diesel: 5.49 },
-    },
-    {
-      id: "gas-sp-ipiranga-faria",
-      name: "Posto Ipiranga - Faria Lima",
-      type: "gas",
-      lat: -23.5874,
-      lng: -46.6847,
-      address: "Av. Brig. Faria Lima, 2232 - Jardim Paulistano",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.79, etanol: 3.89, diesel: 5.39 },
-    },
-    {
-      id: "gas-sp-br-marginal",
-      name: "Posto BR - Marginal Tietê",
-      type: "gas",
-      lat: -23.5189,
-      lng: -46.6897,
-      address: "Marginal Tietê, km 12 - Lapa",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.85, etanol: 3.95, diesel: 5.45, gnv: 4.29 },
-    },
-    {
-      id: "gas-sp-ale-santo-amaro",
-      name: "Posto Ale - Santo Amaro",
-      type: "gas",
-      lat: -23.6544,
-      lng: -46.7094,
-      address: "Av. Santo Amaro, 5800 - Santo Amaro",
-      open24h: false,
-      brand: "Ale",
-      fuelPrices: { gasolina: 5.69, etanol: 3.79, diesel: 5.29 },
-    },
-    {
-      id: "gas-sp-shell-ibirapuera",
-      name: "Posto Shell - Ibirapuera",
-      type: "gas",
-      lat: -23.6028,
-      lng: -46.6652,
-      address: "Av. Ibirapuera, 2120 - Moema",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.92, etanol: 4.05, diesel: 5.55 },
-    },
-    
-    // Cafés e Áreas de Descanso - SP
-    {
-      id: "rest-sp-starbucks-paulista",
-      name: "Starbucks - Paulista",
-      type: "rest",
-      lat: -23.5634,
-      lng: -46.6543,
-      address: "Av. Paulista, 1230 - Bela Vista",
-      open24h: false,
-    },
-    {
-      id: "rest-sp-cafe-girondino",
-      name: "Café Girondino",
-      type: "rest",
-      lat: -23.5453,
-      lng: -46.6361,
-      address: "Praça da Sé, 42 - Centro Histórico",
-      open24h: false,
-    },
-    {
-      id: "rest-sp-mcdonalds-24h",
-      name: "McDonald's 24h - Pinheiros",
-      type: "rest",
-      lat: -23.5631,
-      lng: -46.6892,
-      address: "Rua dos Pinheiros, 890",
-      open24h: true,
-    },
-    {
-      id: "rest-sp-padaria-real",
-      name: "Padaria Real - Moema",
-      type: "rest",
-      lat: -23.6012,
-      lng: -46.6689,
-      address: "Al. dos Arapanés, 321 - Moema",
-      open24h: true,
-    },
-    {
-      id: "rest-sp-graal-anhanguera",
-      name: "Graal - Anhanguera km 30",
-      type: "rest",
-      lat: -23.4123,
-      lng: -46.8234,
-      address: "Rod. Anhanguera, km 30 - São Paulo",
-      open24h: true,
-    },
-    
-    // Banheiros Públicos - SP
-    {
-      id: "bath-sp-se",
-      name: "Banheiro Público - Praça da Sé",
-      type: "bathroom",
-      lat: -23.5505,
-      lng: -46.6340,
-      address: "Praça da Sé, Centro",
-      open24h: false,
-    },
-    {
-      id: "bath-sp-shopping-ibirapuera",
-      name: "Shopping Ibirapuera - Banheiros",
-      type: "bathroom",
-      lat: -23.6109,
-      lng: -46.6654,
-      address: "Av. Ibirapuera, 3103 - Moema",
-      open24h: false,
-    },
-    {
-      id: "bath-sp-terminal-tiete",
-      name: "Terminal Tietê - Banheiros",
-      type: "bathroom",
-      lat: -23.5166,
-      lng: -46.6254,
-      address: "Av. Cruzeiro do Sul, 1800",
-      open24h: true,
-    },
-    
-    // Estacionamentos - SP
-    {
-      id: "park-sp-centro",
-      name: "Estacionamento Centro - 24h",
-      type: "parking",
-      lat: -23.5489,
-      lng: -46.6388,
-      address: "Rua Direita, 100 - Centro",
-      open24h: true,
-    },
-    {
-      id: "park-sp-marginal-descanso",
-      name: "Área de Descanso - Marginal",
-      type: "parking",
-      lat: -23.5673,
-      lng: -46.7012,
-      address: "Marginal Pinheiros, km 15",
-      open24h: true,
-    },
-
-    // ============ RIO DE JANEIRO ============
-    {
-      id: "gas-rj-shell-copacabana",
-      name: "Posto Shell - Copacabana",
-      type: "gas",
-      lat: -22.9711,
-      lng: -43.1822,
-      address: "Av. Atlântica, 1702 - Copacabana",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.19, etanol: 4.29, diesel: 5.89 },
-    },
-    {
-      id: "gas-rj-ipiranga-barra",
-      name: "Posto Ipiranga - Barra",
-      type: "gas",
-      lat: -23.0012,
-      lng: -43.3654,
-      address: "Av. das Américas, 4666 - Barra da Tijuca",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.09, etanol: 4.19, diesel: 5.79 },
-    },
-    {
-      id: "gas-rj-br-centro",
-      name: "Posto BR - Centro RJ",
-      type: "gas",
-      lat: -22.9068,
-      lng: -43.1729,
-      address: "Av. Presidente Vargas, 1000 - Centro",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.15, etanol: 4.25, diesel: 5.85, gnv: 4.49 },
-    },
-    {
-      id: "rest-rj-confeitaria-colombo",
-      name: "Confeitaria Colombo",
-      type: "rest",
-      lat: -22.9028,
-      lng: -43.1764,
-      address: "R. Gonçalves Dias, 32 - Centro",
-      open24h: false,
-    },
-    {
-      id: "rest-rj-bobs-ipanema",
-      name: "Bob's 24h - Ipanema",
-      type: "rest",
-      lat: -22.9838,
-      lng: -43.2096,
-      address: "Rua Visconde de Pirajá, 595",
-      open24h: true,
-    },
-    {
-      id: "bath-rj-central",
-      name: "Central do Brasil - Banheiros",
-      type: "bathroom",
-      lat: -22.9031,
-      lng: -43.1840,
-      address: "Praça Cristiano Ottoni - Centro",
-      open24h: true,
-    },
-
-    // ============ BELO HORIZONTE ============
-    {
-      id: "gas-bh-shell-savassi",
-      name: "Posto Shell - Savassi",
-      type: "gas",
-      lat: -19.9359,
-      lng: -43.9378,
-      address: "Av. Getúlio Vargas, 1492 - Savassi",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.79, etanol: 3.89, diesel: 5.39 },
-    },
-    {
-      id: "gas-bh-ipiranga-pampulha",
-      name: "Posto Ipiranga - Pampulha",
-      type: "gas",
-      lat: -19.8512,
-      lng: -43.9734,
-      address: "Av. Portugal, 2000 - Pampulha",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.75, etanol: 3.85, diesel: 5.35 },
-    },
-    {
-      id: "rest-bh-cafe-nice",
-      name: "Café Nice",
-      type: "rest",
-      lat: -19.9208,
-      lng: -43.9378,
-      address: "Av. Afonso Pena, 1050 - Centro",
-      open24h: false,
-    },
-    {
-      id: "park-bh-central",
-      name: "Área de Descanso - Rodoviária BH",
-      type: "parking",
-      lat: -19.9232,
-      lng: -43.9305,
-      address: "Praça Rio Branco, 100 - Centro",
-      open24h: true,
-    },
-
-    // ============ CURITIBA ============
-    {
-      id: "gas-cwb-shell-batel",
-      name: "Posto Shell - Batel",
-      type: "gas",
-      lat: -25.4372,
-      lng: -49.2895,
-      address: "Av. do Batel, 1868 - Batel",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.69, etanol: 3.79, diesel: 5.29 },
-    },
-    {
-      id: "gas-cwb-br-centro",
-      name: "Posto BR - Centro Cívico",
-      type: "gas",
-      lat: -25.4195,
-      lng: -49.2646,
-      address: "Av. Cândido de Abreu, 600",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.72, etanol: 3.82, diesel: 5.32 },
-    },
-    {
-      id: "rest-cwb-lucca-cafe",
-      name: "Lucca Café - Centro",
-      type: "rest",
-      lat: -25.4284,
-      lng: -49.2716,
-      address: "Rua XV de Novembro, 350",
-      open24h: false,
-    },
-    {
-      id: "bath-cwb-rodoferroviaria",
-      name: "Rodoferroviária - Banheiros",
-      type: "bathroom",
-      lat: -25.4362,
-      lng: -49.2540,
-      address: "Av. Presidente Affonso Camargo, 330",
-      open24h: true,
-    },
-
-    // ============ PORTO ALEGRE ============
-    {
-      id: "gas-poa-ipiranga-moinhos",
-      name: "Posto Ipiranga - Moinhos",
-      type: "gas",
-      lat: -30.0236,
-      lng: -51.2039,
-      address: "Rua Padre Chagas, 333 - Moinhos de Vento",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.85, etanol: 3.95, diesel: 5.45 },
-    },
-    {
-      id: "gas-poa-shell-beira-rio",
-      name: "Posto Shell - Beira Rio",
-      type: "gas",
-      lat: -30.0652,
-      lng: -51.2354,
-      address: "Av. Edvaldo Pereira Paiva, 1200",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.89, etanol: 3.99, diesel: 5.49 },
-    },
-    {
-      id: "rest-poa-casa-cultura",
-      name: "Café Casa da Cultura",
-      type: "rest",
-      lat: -30.0317,
-      lng: -51.2306,
-      address: "Praça da Alfândega, 40 - Centro",
-      open24h: false,
-    },
-
-    // ============ BRASÍLIA ============
-    {
-      id: "gas-bsb-shell-asa-sul",
-      name: "Posto Shell - Asa Sul",
-      type: "gas",
-      lat: -15.8352,
-      lng: -47.9127,
-      address: "SQS 308 - Asa Sul",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.95, etanol: 4.05, diesel: 5.55 },
-    },
-    {
-      id: "gas-bsb-br-plano-piloto",
-      name: "Posto BR - Plano Piloto",
-      type: "gas",
-      lat: -15.7942,
-      lng: -47.8825,
-      address: "Setor Comercial Norte - Asa Norte",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.99, etanol: 4.09, diesel: 5.59 },
-    },
-    {
-      id: "rest-bsb-cafe-dom",
-      name: "Café Ernesto - 408 Sul",
-      type: "rest",
-      lat: -15.8409,
-      lng: -47.9183,
-      address: "CLS 408 Bloco C - Asa Sul",
-      open24h: false,
-    },
-    {
-      id: "bath-bsb-rodoviaria",
-      name: "Rodoviária de Brasília - Banheiros",
-      type: "bathroom",
-      lat: -15.7942,
-      lng: -47.8825,
-      address: "Rodoviária do Plano Piloto",
-      open24h: true,
-    },
-
-    // ============ SALVADOR ============
-    {
-      id: "gas-ssa-shell-barra",
-      name: "Posto Shell - Barra",
-      type: "gas",
-      lat: -13.0102,
-      lng: -38.5312,
-      address: "Av. Oceânica, 1200 - Barra",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.05, etanol: 4.15, diesel: 5.65 },
-    },
-    {
-      id: "gas-ssa-ipiranga-pelourinho",
-      name: "Posto Ipiranga - Pelourinho",
-      type: "gas",
-      lat: -12.9714,
-      lng: -38.5096,
-      address: "Av. J. J. Seabra, 500 - Pelourinho",
-      open24h: false,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.99, etanol: 4.09, diesel: 5.59 },
-    },
-    {
-      id: "rest-ssa-cafe-bahia",
-      name: "Café Bahia - Mercado Modelo",
-      type: "rest",
-      lat: -12.9739,
-      lng: -38.5133,
-      address: "Praça Visc. de Cayru - Comércio",
-      open24h: false,
-    },
-
-    // ============ FORTALEZA ============
-    {
-      id: "gas-for-shell-meireles",
-      name: "Posto Shell - Meireles",
-      type: "gas",
-      lat: -3.7261,
-      lng: -38.4983,
-      address: "Av. Beira Mar, 2500 - Meireles",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.89, etanol: 4.19, diesel: 5.49 },
-    },
-    {
-      id: "gas-for-br-aldeota",
-      name: "Posto BR - Aldeota",
-      type: "gas",
-      lat: -3.7400,
-      lng: -38.5012,
-      address: "Av. Santos Dumont, 1789 - Aldeota",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.85, etanol: 4.15, diesel: 5.45 },
-    },
-    {
-      id: "rest-for-cafe-central",
-      name: "Café Central - Centro",
-      type: "rest",
-      lat: -3.7260,
-      lng: -38.5271,
-      address: "Rua Major Facundo, 500 - Centro",
-      open24h: false,
-    },
-
-    // ============ RECIFE ============
-    {
-      id: "gas-rec-shell-boa-viagem",
-      name: "Posto Shell - Boa Viagem",
-      type: "gas",
-      lat: -8.1204,
-      lng: -34.9034,
-      address: "Av. Boa Viagem, 4000 - Boa Viagem",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.95, etanol: 4.25, diesel: 5.55 },
-    },
-    {
-      id: "gas-rec-ipiranga-recife-antigo",
-      name: "Posto Ipiranga - Recife Antigo",
-      type: "gas",
-      lat: -8.0631,
-      lng: -34.8711,
-      address: "Av. Alfredo Lisboa, 200",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.89, etanol: 4.19, diesel: 5.49 },
-    },
-    {
-      id: "rest-rec-cafe-cordel",
-      name: "Café Cordel - Marco Zero",
-      type: "rest",
-      lat: -8.0631,
-      lng: -34.8711,
-      address: "Praça Rio Branco - Recife Antigo",
-      open24h: false,
-    },
-
-    // ============ CAMPINAS ============
-    {
-      id: "gas-camp-shell-cambuí",
-      name: "Posto Shell - Cambuí",
-      type: "gas",
-      lat: -22.8989,
-      lng: -47.0545,
-      address: "Av. José de Souza Campos, 1200 - Cambuí",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.75, etanol: 3.85, diesel: 5.35 },
-    },
-    {
-      id: "gas-camp-ipiranga-anhanguera",
-      name: "Posto Ipiranga - Anhanguera",
-      type: "gas",
-      lat: -22.8545,
-      lng: -47.0912,
-      address: "Rod. Anhanguera, km 98 - Campinas",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.72, etanol: 3.82, diesel: 5.32 },
-    },
-    {
-      id: "rest-camp-graal-bandeirantes",
-      name: "Graal - Rod. Bandeirantes km 89",
-      type: "rest",
-      lat: -22.8821,
-      lng: -47.0234,
-      address: "Rod. Bandeirantes, km 89",
-      open24h: true,
-    },
-
-    // ============ GOIÂNIA ============
-    {
-      id: "gas-gyn-shell-setor-oeste",
-      name: "Posto Shell - Setor Oeste",
-      type: "gas",
-      lat: -16.6869,
-      lng: -49.2648,
-      address: "Av. T-3, 1500 - Setor Oeste",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.69, etanol: 3.79, diesel: 5.29 },
-    },
-    {
-      id: "gas-gyn-br-marista",
-      name: "Posto BR - Setor Marista",
-      type: "gas",
-      lat: -16.7056,
-      lng: -49.2606,
-      address: "Av. T-10, 800 - Setor Marista",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.72, etanol: 3.82, diesel: 5.32 },
-    },
-    {
-      id: "rest-gyn-cafe-goiano",
-      name: "Café Goiano - Centro",
-      type: "rest",
-      lat: -16.6799,
-      lng: -49.2550,
-      address: "Av. Goiás, 1000 - Centro",
-      open24h: false,
-    },
-
-    // ============ REGIÃO NORDESTE - EXPANDIDA ============
-    
-    // ============ NATAL - RN ============
-    {
-      id: "gas-nat-shell-ponta-negra",
-      name: "Posto Shell - Ponta Negra",
-      type: "gas",
-      lat: -5.8822,
-      lng: -35.1880,
-      address: "Av. Eng. Roberto Freire, 2000 - Ponta Negra",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.35, etanol: 4.85, diesel: 6.15 },
-    },
-    {
-      id: "gas-nat-br-via-costeira",
-      name: "Posto BR - Via Costeira",
-      type: "gas",
-      lat: -5.8567,
-      lng: -35.1712,
-      address: "Via Costeira, km 5 - Natal",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.39, etanol: 4.89, diesel: 6.19 },
-    },
-    {
-      id: "rest-nat-cafe-mar",
-      name: "Café do Mar - Ponta Negra",
-      type: "rest",
-      lat: -5.8789,
-      lng: -35.1856,
-      address: "Praia de Ponta Negra - Natal",
-      open24h: false,
-    },
-    {
-      id: "bath-nat-rodoviaria",
-      name: "Rodoviária de Natal - Banheiros",
-      type: "bathroom",
-      lat: -5.7945,
-      lng: -35.2134,
-      address: "Av. Cap. Mor Gouveia - Cidade da Esperança",
-      open24h: true,
-    },
-
-    // ============ JOÃO PESSOA - PB ============
-    {
-      id: "gas-jpa-shell-tambaú",
-      name: "Posto Shell - Tambaú",
-      type: "gas",
-      lat: -7.1152,
-      lng: -34.8361,
-      address: "Av. Almirante Tamandaré, 1500 - Tambaú",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.25, etanol: 4.75, diesel: 6.05 },
-    },
-    {
-      id: "gas-jpa-ipiranga-centro",
-      name: "Posto Ipiranga - Centro",
-      type: "gas",
-      lat: -7.1195,
-      lng: -34.8840,
-      address: "Av. João Machado, 800 - Centro",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.19, etanol: 4.69, diesel: 5.99 },
-    },
-    {
-      id: "rest-jpa-cafe-bessa",
-      name: "Café Bessa - Praia do Bessa",
-      type: "rest",
-      lat: -7.0851,
-      lng: -34.8356,
-      address: "Av. Flávio Ribeiro Coutinho - Bessa",
-      open24h: false,
-    },
-    {
-      id: "bath-jpa-terminal",
-      name: "Terminal Rodoviário - Banheiros",
-      type: "bathroom",
-      lat: -7.1001,
-      lng: -34.8789,
-      address: "Av. Francisco L. da Silva - Varadouro",
-      open24h: true,
-    },
-
-    // ============ MACEIÓ - AL ============
-    {
-      id: "gas-mcz-shell-pajuçara",
-      name: "Posto Shell - Pajuçara",
-      type: "gas",
-      lat: -9.6658,
-      lng: -35.7089,
-      address: "Av. Dr. Antônio Gouveia, 1200 - Pajuçara",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.25, etanol: 4.75, diesel: 6.05 },
-    },
-    {
-      id: "gas-mcz-br-ponta-verde",
-      name: "Posto BR - Ponta Verde",
-      type: "gas",
-      lat: -9.6611,
-      lng: -35.6978,
-      address: "Av. Álvaro Otacílio, 800 - Ponta Verde",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.29, etanol: 4.79, diesel: 6.09 },
-    },
-    {
-      id: "rest-mcz-cafe-jatiuca",
-      name: "Café Jatiúca - Orla",
-      type: "rest",
-      lat: -9.6489,
-      lng: -35.6912,
-      address: "Av. Álvaro Otacílio, 2500 - Jatiúca",
-      open24h: false,
-    },
-
-    // ============ ARACAJU - SE ============
-    {
-      id: "gas-aju-shell-atalaia",
-      name: "Posto Shell - Atalaia",
-      type: "gas",
-      lat: -10.9833,
-      lng: -37.0391,
-      address: "Av. Santos Dumont, 1500 - Atalaia",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.15, etanol: 4.65, diesel: 5.95 },
-    },
-    {
-      id: "gas-aju-ipiranga-centro",
-      name: "Posto Ipiranga - Centro",
-      type: "gas",
-      lat: -10.9111,
-      lng: -37.0716,
-      address: "Av. Barão de Maruim, 500 - Centro",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.09, etanol: 4.59, diesel: 5.89 },
-    },
-    {
-      id: "rest-aju-orla",
-      name: "Quiosque Orla - Atalaia",
-      type: "rest",
-      lat: -10.9889,
-      lng: -37.0356,
-      address: "Passarela do Caranguejo - Atalaia",
-      open24h: false,
-    },
-
-    // ============ TERESINA - PI ============
-    {
-      id: "gas-the-shell-leste",
-      name: "Posto Shell - Zona Leste",
-      type: "gas",
-      lat: -5.0892,
-      lng: -42.7812,
-      address: "Av. Dom Severino, 2000 - Fátima",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.45, etanol: 4.95, diesel: 6.25 },
-    },
-    {
-      id: "gas-the-br-centro",
-      name: "Posto BR - Centro",
-      type: "gas",
-      lat: -5.0891,
-      lng: -42.8034,
-      address: "Av. Frei Serafim, 1200 - Centro",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.49, etanol: 4.99, diesel: 6.29 },
-    },
-    {
-      id: "rest-the-shopping",
-      name: "Praça de Alimentação - Riverside",
-      type: "rest",
-      lat: -5.0756,
-      lng: -42.7723,
-      address: "Av. Raul Lopes, 1000 - Ininga",
-      open24h: false,
-    },
-
-    // ============ SÃO LUÍS - MA ============
-    {
-      id: "gas-slz-shell-calhau",
-      name: "Posto Shell - Calhau",
-      type: "gas",
-      lat: -2.4912,
-      lng: -44.2234,
-      address: "Av. Litorânea, 2000 - Calhau",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.45, etanol: 4.95, diesel: 6.25 },
-    },
-    {
-      id: "gas-slz-ipiranga-centro",
-      name: "Posto Ipiranga - Centro Histórico",
-      type: "gas",
-      lat: -2.5297,
-      lng: -44.3028,
-      address: "Av. Beira Mar, 500 - Centro",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.39, etanol: 4.89, diesel: 6.19 },
-    },
-    {
-      id: "rest-slz-cafe-reviver",
-      name: "Café do Reviver - Centro Histórico",
-      type: "rest",
-      lat: -2.5278,
-      lng: -44.3045,
-      address: "Rua Portugal, 100 - Centro Histórico",
-      open24h: false,
-    },
-    {
-      id: "bath-slz-rodoviaria",
-      name: "Terminal Rodoviário - Banheiros",
-      type: "bathroom",
-      lat: -2.5445,
-      lng: -44.2678,
-      address: "Av. dos Franceses - Vila Palmeira",
-      open24h: true,
-    },
-
-    // ============ REGIÃO NORTE ============
-    
-    // ============ MANAUS - AM ============
-    {
-      id: "gas-mao-shell-adrianopolis",
-      name: "Posto Shell - Adrianópolis",
-      type: "gas",
-      lat: -3.0956,
-      lng: -60.0234,
-      address: "Av. Djalma Batista, 2500 - Adrianópolis",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.55, etanol: 5.25, diesel: 6.35 },
-    },
-    {
-      id: "gas-mao-br-centro",
-      name: "Posto BR - Centro",
-      type: "gas",
-      lat: -3.1302,
-      lng: -60.0212,
-      address: "Av. Eduardo Ribeiro, 800 - Centro",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.59, etanol: 5.29, diesel: 6.39 },
-    },
-    {
-      id: "gas-mao-ipiranga-ponta-negra",
-      name: "Posto Ipiranga - Ponta Negra",
-      type: "gas",
-      lat: -3.0612,
-      lng: -60.0934,
-      address: "Av. Coronel Teixeira, 5000 - Ponta Negra",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.52, etanol: 5.22, diesel: 6.32 },
-    },
-    {
-      id: "rest-mao-cafe-teatro",
-      name: "Café do Teatro - Centro",
-      type: "rest",
-      lat: -3.1312,
-      lng: -60.0234,
-      address: "Praça São Sebastião - Centro",
-      open24h: false,
-    },
-    {
-      id: "rest-mao-ponto-manaus",
-      name: "Ponto do Café - Manauara Shopping",
-      type: "rest",
-      lat: -3.1012,
-      lng: -60.0156,
-      address: "Av. Mário Ypiranga, 1300 - Adrianópolis",
-      open24h: false,
-    },
-    {
-      id: "bath-mao-rodoviaria",
-      name: "Rodoviária de Manaus - Banheiros",
-      type: "bathroom",
-      lat: -3.0867,
-      lng: -60.0012,
-      address: "Rua Recife, 2784 - Flores",
-      open24h: true,
-    },
-    {
-      id: "park-mao-centro",
-      name: "Estacionamento Centro - 24h",
-      type: "parking",
-      lat: -3.1295,
-      lng: -60.0189,
-      address: "Av. Eduardo Ribeiro, 500 - Centro",
-      open24h: true,
-    },
-
-    // ============ BELÉM - PA ============
-    {
-      id: "gas-bel-shell-batista-campos",
-      name: "Posto Shell - Batista Campos",
-      type: "gas",
-      lat: -1.4512,
-      lng: -48.4867,
-      address: "Av. Nazaré, 1800 - Batista Campos",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.45, etanol: 5.15, diesel: 6.25 },
-    },
-    {
-      id: "gas-bel-br-umarizal",
-      name: "Posto BR - Umarizal",
-      type: "gas",
-      lat: -1.4389,
-      lng: -48.4756,
-      address: "Av. Braz de Aguiar, 600 - Umarizal",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.49, etanol: 5.19, diesel: 6.29 },
-    },
-    {
-      id: "gas-bel-ipiranga-marco",
-      name: "Posto Ipiranga - Marco",
-      type: "gas",
-      lat: -1.4278,
-      lng: -48.4612,
-      address: "Av. Almirante Barroso, 2000 - Marco",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.42, etanol: 5.12, diesel: 6.22 },
-    },
-    {
-      id: "rest-bel-ver-o-peso",
-      name: "Café Ver-o-Peso - Mercado",
-      type: "rest",
-      lat: -1.4534,
-      lng: -48.5023,
-      address: "Feira do Ver-o-Peso - Cidade Velha",
-      open24h: false,
-    },
-    {
-      id: "rest-bel-estacao-docas",
-      name: "Restaurante Estação das Docas",
-      type: "rest",
-      lat: -1.4478,
-      lng: -48.4989,
-      address: "Blvd. Castilhos França - Campina",
-      open24h: false,
-    },
-    {
-      id: "bath-bel-rodoviaria",
-      name: "Rodoviária de Belém - Banheiros",
-      type: "bathroom",
-      lat: -1.4034,
-      lng: -48.4334,
-      address: "Av. Almirante Barroso - São Brás",
-      open24h: true,
-    },
-
-    // ============ PORTO VELHO - RO ============
-    {
-      id: "gas-pvh-shell-centro",
-      name: "Posto Shell - Centro",
-      type: "gas",
-      lat: -8.7608,
-      lng: -63.8999,
-      address: "Av. Sete de Setembro, 1500 - Centro",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.35, etanol: 5.05, diesel: 6.15 },
-    },
-    {
-      id: "gas-pvh-br-nova-porto",
-      name: "Posto BR - Nova Porto Velho",
-      type: "gas",
-      lat: -8.7523,
-      lng: -63.8612,
-      address: "Av. Jorge Teixeira, 2000 - Nova Porto Velho",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.39, etanol: 5.09, diesel: 6.19 },
-    },
-    {
-      id: "rest-pvh-orla",
-      name: "Café da Orla - Estrada de Ferro",
-      type: "rest",
-      lat: -8.7612,
-      lng: -63.9012,
-      address: "Praça da Estrada de Ferro - Centro",
-      open24h: false,
-    },
-
-    // ============ RIO BRANCO - AC ============
-    {
-      id: "gas-rbr-shell-centro",
-      name: "Posto Shell - Centro",
-      type: "gas",
-      lat: -9.9756,
-      lng: -67.8245,
-      address: "Av. Ceará, 1200 - Centro",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.85, etanol: 5.55, diesel: 6.65 },
-    },
-    {
-      id: "gas-rbr-br-bosque",
-      name: "Posto BR - Bosque",
-      type: "gas",
-      lat: -9.9645,
-      lng: -67.8123,
-      address: "Av. Antônio da Rocha Viana, 800 - Bosque",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.89, etanol: 5.59, diesel: 6.69 },
-    },
-    {
-      id: "rest-rbr-mercado",
-      name: "Café do Mercado - Centro",
-      type: "rest",
-      lat: -9.9734,
-      lng: -67.8189,
-      address: "Mercado Velho - Centro",
-      open24h: false,
-    },
-
-    // ============ MACAPÁ - AP ============
-    {
-      id: "gas-mcp-shell-centro",
-      name: "Posto Shell - Centro",
-      type: "gas",
-      lat: 0.0356,
-      lng: -51.0656,
-      address: "Av. FAB, 1500 - Centro",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.65, etanol: 5.35, diesel: 6.45 },
-    },
-    {
-      id: "gas-mcp-br-marco-zero",
-      name: "Posto BR - Marco Zero",
-      type: "gas",
-      lat: 0.0289,
-      lng: -51.0512,
-      address: "Av. Equatorial, 300 - Marco Zero",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.69, etanol: 5.39, diesel: 6.49 },
-    },
-    {
-      id: "rest-mcp-trapiche",
-      name: "Café do Trapiche - Orla",
-      type: "rest",
-      lat: 0.0312,
-      lng: -51.0534,
-      address: "Av. Beira Rio - Centro",
-      open24h: false,
-    },
-
-    // ============ BOA VISTA - RR ============
-    {
-      id: "gas-bvb-shell-centro",
-      name: "Posto Shell - Centro",
-      type: "gas",
-      lat: 2.8235,
-      lng: -60.6758,
-      address: "Av. Ville Roy, 1200 - Centro",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.75, etanol: 5.45, diesel: 6.55 },
-    },
-    {
-      id: "gas-bvb-br-caimbé",
-      name: "Posto BR - Caimbé",
-      type: "gas",
-      lat: 2.8156,
-      lng: -60.6612,
-      address: "Av. Capitão Júlio Bezerra, 500 - Caimbé",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.79, etanol: 5.49, diesel: 6.59 },
-    },
-    {
-      id: "rest-bvb-orla",
-      name: "Café Orla Taumanan",
-      type: "rest",
-      lat: 2.8267,
-      lng: -60.6812,
-      address: "Orla Taumanan - Centro",
-      open24h: false,
-    },
-
-    // ============ PALMAS - TO ============
-    {
-      id: "gas-pmw-shell-centro",
-      name: "Posto Shell - Plano Diretor Sul",
-      type: "gas",
-      lat: -10.2128,
-      lng: -48.3603,
-      address: "Quadra 104 Sul - Plano Diretor Sul",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.25, etanol: 4.75, diesel: 6.05 },
-    },
-    {
-      id: "gas-pmw-br-norte",
-      name: "Posto BR - Plano Diretor Norte",
-      type: "gas",
-      lat: -10.1689,
-      lng: -48.3312,
-      address: "Quadra 104 Norte - Plano Diretor Norte",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 6.29, etanol: 4.79, diesel: 6.09 },
-    },
-    {
-      id: "gas-pmw-ipiranga-sul",
-      name: "Posto Ipiranga - Taquaralto",
-      type: "gas",
-      lat: -10.2856,
-      lng: -48.3445,
-      address: "Av. Tocantins, 1500 - Taquaralto",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 6.22, etanol: 4.72, diesel: 6.02 },
-    },
-    {
-      id: "rest-pmw-praia-graciosa",
-      name: "Quiosque Praia da Graciosa",
-      type: "rest",
-      lat: -10.1845,
-      lng: -48.3512,
-      address: "Praia da Graciosa - Palmas",
-      open24h: false,
-    },
-    {
-      id: "bath-pmw-rodoviaria",
-      name: "Rodoviária de Palmas - Banheiros",
-      type: "bathroom",
-      lat: -10.1912,
-      lng: -48.3234,
-      address: "LO 14, Plano Diretor Sul",
-      open24h: true,
-    },
-
-    // ============ RODOVIAS PRINCIPAIS ============
-    // Rodovia Presidente Dutra (SP-RJ)
-    {
-      id: "gas-dutra-graal-sp",
-      name: "Posto Graal - Dutra km 170",
-      type: "gas",
-      lat: -23.1845,
-      lng: -45.8567,
-      address: "Rod. Presidente Dutra, km 170 - SP",
-      open24h: true,
-      brand: "Graal",
-      fuelPrices: { gasolina: 5.95, etanol: 4.05, diesel: 5.55 },
-    },
-    {
-      id: "rest-dutra-graal-sp",
-      name: "Graal Restaurante - Dutra km 170",
-      type: "rest",
-      lat: -23.1845,
-      lng: -45.8567,
-      address: "Rod. Presidente Dutra, km 170",
-      open24h: true,
-    },
-    {
-      id: "gas-dutra-shell-sjc",
-      name: "Posto Shell - São José dos Campos",
-      type: "gas",
-      lat: -23.1857,
-      lng: -45.8844,
-      address: "Rod. Presidente Dutra, km 145 - SJC",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.89, etanol: 3.99, diesel: 5.49 },
-    },
-
-    // Rodovia dos Bandeirantes
-    {
-      id: "gas-band-ipiranga-km50",
-      name: "Posto Ipiranga - Bandeirantes km 50",
-      type: "gas",
-      lat: -23.1234,
-      lng: -46.9567,
-      address: "Rod. Bandeirantes, km 50",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.79, etanol: 3.89, diesel: 5.39 },
-    },
-    {
-      id: "rest-band-graal-km65",
-      name: "Graal - Bandeirantes km 65",
-      type: "rest",
-      lat: -22.9876,
-      lng: -47.0234,
-      address: "Rod. Bandeirantes, km 65",
-      open24h: true,
-    },
-    {
-      id: "bath-band-area-km70",
-      name: "Área de Serviço - Bandeirantes km 70",
-      type: "bathroom",
-      lat: -22.9512,
-      lng: -47.0456,
-      address: "Rod. Bandeirantes, km 70",
-      open24h: true,
-    },
-
-    // Rodovia Anhanguera
-    {
-      id: "gas-anh-shell-km40",
-      name: "Posto Shell - Anhanguera km 40",
-      type: "gas",
-      lat: -23.3456,
-      lng: -46.8901,
-      address: "Rod. Anhanguera, km 40",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.85, etanol: 3.95, diesel: 5.45 },
-    },
-    {
-      id: "rest-anh-graal-km55",
-      name: "Graal - Anhanguera km 55",
-      type: "rest",
-      lat: -23.2345,
-      lng: -46.9234,
-      address: "Rod. Anhanguera, km 55",
-      open24h: true,
-    },
-    {
-      id: "park-anh-descanso-km60",
-      name: "Área de Descanso - Anhanguera km 60",
-      type: "parking",
-      lat: -23.1890,
-      lng: -46.9567,
-      address: "Rod. Anhanguera, km 60",
-      open24h: true,
-    },
-
-    // BR-116 (Régis Bittencourt)
-    {
-      id: "gas-regis-br-km300",
-      name: "Posto BR - Régis km 300",
-      type: "gas",
-      lat: -23.7234,
-      lng: -46.7890,
-      address: "Rod. Régis Bittencourt, km 300",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.79, etanol: 3.89, diesel: 5.39 },
-    },
-    {
-      id: "rest-regis-parada-km310",
-      name: "Parada do Motorista - Régis km 310",
-      type: "rest",
-      lat: -23.7890,
-      lng: -46.8123,
-      address: "Rod. Régis Bittencourt, km 310",
-      open24h: true,
-    },
-
-    // BR-101 (Rio-Santos)
-    {
-      id: "gas-rio-santos-shell-km100",
-      name: "Posto Shell - Rio-Santos km 100",
-      type: "gas",
-      lat: -23.4567,
-      lng: -44.8901,
-      address: "Rod. Rio-Santos, km 100",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 6.09, etanol: 4.19, diesel: 5.69 },
-    },
-
-    // Fernão Dias (SP-MG)
-    {
-      id: "gas-fernao-ipiranga-km50",
-      name: "Posto Ipiranga - Fernão Dias km 50",
-      type: "gas",
-      lat: -23.2345,
-      lng: -46.4567,
-      address: "Rod. Fernão Dias, km 50",
-      open24h: true,
-      brand: "Ipiranga",
-      fuelPrices: { gasolina: 5.82, etanol: 3.92, diesel: 5.42 },
-    },
-    {
-      id: "rest-fernao-graal-km75",
-      name: "Graal - Fernão Dias km 75",
-      type: "rest",
-      lat: -22.9876,
-      lng: -46.3456,
-      address: "Rod. Fernão Dias, km 75",
-      open24h: true,
-    },
-    {
-      id: "bath-fernao-area-km80",
-      name: "Área de Serviço - Fernão Dias km 80",
-      type: "bathroom",
-      lat: -22.9234,
-      lng: -46.2890,
-      address: "Rod. Fernão Dias, km 80",
-      open24h: true,
-    },
-
-    // BR-040 (Rio-BH)
-    {
-      id: "gas-br040-shell-juiz-fora",
-      name: "Posto Shell - Juiz de Fora",
-      type: "gas",
-      lat: -21.7642,
-      lng: -43.3503,
-      address: "BR-040, km 775 - Juiz de Fora",
-      open24h: true,
-      brand: "Shell",
-      fuelPrices: { gasolina: 5.89, etanol: 3.99, diesel: 5.49 },
-    },
-    {
-      id: "rest-br040-graal-petropolis",
-      name: "Graal - Petrópolis",
-      type: "rest",
-      lat: -22.5112,
-      lng: -43.1779,
-      address: "BR-040, km 68 - Petrópolis",
-      open24h: true,
-    },
-
-    // BR-381 (Fernão Dias MG)
-    {
-      id: "gas-br381-br-pouso-alegre",
-      name: "Posto BR - Pouso Alegre",
-      type: "gas",
-      lat: -22.2339,
-      lng: -45.9345,
-      address: "BR-381, km 850 - Pouso Alegre",
-      open24h: true,
-      brand: "Petrobras",
-      fuelPrices: { gasolina: 5.75, etanol: 3.85, diesel: 5.35 },
-    },
-  ];
-
-  // Calculate distance for each POI
-  return allPOIs.map(poi => ({
-    ...poi,
-    distance: formatDistance(calculateDistance(userLat, userLng, poi.lat, poi.lng)),
-  }));
-};
 
 function LocationMarker({ position }: { position: [number, number] | null }) {
   const map = useMap();
@@ -1485,78 +125,20 @@ const saveFavorites = (favorites: string[]) => {
 export default function DriverMap() {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [pois, setPois] = useState<PointOfInterest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingLocation, setLoadingLocation] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [favorites, setFavorites] = useState<string[]>(getFavorites);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [fuelDataSource, setFuelDataSource] = useState<"anp" | "database" | "mock">("mock");
-  const [loadingFuel, setLoadingFuel] = useState(false);
-  const [regionalAverages, setRegionalAverages] = useState<RegionalAverages | null>(null);
-  const [currentState, setCurrentState] = useState<string>("");
 
-  // Fetch gas stations from database (premium_partners)
-  const fetchGasStationsFromDB = async (userLat: number, userLng: number): Promise<PointOfInterest[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('premium_partners')
-        .select('*')
-        .eq('tipo', 'posto')
-        .eq('is_active', true);
-
-      if (error) throw error;
-
-      const stations: PointOfInterest[] = (data || [])
-        .filter(partner => partner.latitude && partner.longitude)
-        .map(partner => {
-          const distance = calculateDistance(
-            userLat, 
-            userLng, 
-            Number(partner.latitude), 
-            Number(partner.longitude)
-          );
-          
-          // Parse fuel types from services
-          const services = partner.servicos || [];
-          const fuelPrices: FuelPrices = {};
-          if (services.some((s: string) => s.toLowerCase().includes('gasolina'))) {
-            fuelPrices.gasolina = 5.79 + Math.random() * 0.3; // Simulated prices
-          }
-          if (services.some((s: string) => s.toLowerCase().includes('etanol'))) {
-            fuelPrices.etanol = 3.89 + Math.random() * 0.2;
-          }
-          if (services.some((s: string) => s.toLowerCase().includes('diesel'))) {
-            fuelPrices.diesel = 5.49 + Math.random() * 0.3;
-          }
-          if (services.some((s: string) => s.toLowerCase().includes('gnv'))) {
-            fuelPrices.gnv = 4.29 + Math.random() * 0.2;
-          }
-
-          return {
-            id: partner.id,
-            name: partner.nome,
-            type: "gas" as const,
-            lat: Number(partner.latitude),
-            lng: Number(partner.longitude),
-            distance: formatDistance(distance),
-            address: partner.endereco || '',
-            open24h: partner.tag?.toLowerCase().includes('24h') || false,
-            fuelPrices,
-            brand: partner.tag || 'Parceiro MOVA',
-          };
-        })
-        .sort((a, b) => {
-          const distA = parseFloat(a.distance?.replace('km', '').replace('m', '') || '0');
-          const distB = parseFloat(b.distance?.replace('km', '').replace('m', '') || '0');
-          return distA - distB;
-        });
-
-      return stations;
-    } catch (error) {
-      console.error('Error fetching gas stations from DB:', error);
-      return [];
-    }
-  };
+  const { 
+    loading: loadingFuel, 
+    dataSource, 
+    regionalAverages, 
+    currentState, 
+    fetchPOIs, 
+    fetchGasStationsFromDB 
+  } = useFuelPrices();
 
   const toggleFavorite = (poiId: string) => {
     setFavorites(prev => {
@@ -1570,94 +152,55 @@ export default function DriverMap() {
 
   const isFavorite = (poiId: string) => favorites.includes(poiId);
 
-  const fetchFuelPrices = async (lat: number, lng: number) => {
-    setLoadingFuel(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('fuel-prices', {
-        body: { lat, lng, radiusKm: 10 }
-      });
-      
-      if (error) throw error;
-      
-      const fuelStations: PointOfInterest[] = data.stations.map((station: FuelStation) => ({
-        id: station.id,
-        name: station.name,
-        type: "gas" as const,
-        lat: station.lat,
-        lng: station.lng,
-        distance: station.distance,
-        address: station.address,
-        open24h: station.open24h,
-        fuelPrices: station.prices,
-        brand: station.brand,
-        updatedAt: station.updatedAt,
-        priceSource: station.priceSource,
-        state: station.state,
-      }));
-      
-      // Set regional data
-      if (data.regionalAverages) {
-        setRegionalAverages(data.regionalAverages);
-      }
-      if (data.state) {
-        setCurrentState(data.state);
-      }
-      
-      setFuelDataSource("anp");
-      return fuelStations;
-    } catch (error) {
-      console.error("Error fetching fuel prices:", error);
-      toast.error("Erro ao buscar preços ANP. Usando dados locais.");
-      return [];
-    } finally {
-      setLoadingFuel(false);
-    }
-  };
-
   const fetchLocation = async () => {
-    setLoading(true);
+    setLoadingLocation(true);
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
           setPosition(coords);
           
-          // Prioritize ANP API for fuel prices
-          setLoadingFuel(true);
-          const apiStations = await fetchFuelPrices(coords[0], coords[1]);
+          // Fetch real POIs from OpenStreetMap + ANP
+          const osmPOIs = await fetchPOIs(coords[0], coords[1], 5);
           
-          // Also fetch from database as supplement
+          // Also fetch from database as supplement (MOVA partners)
           const dbStations = await fetchGasStationsFromDB(coords[0], coords[1]);
           
-          // Combine: API stations first, then DB stations
-          const allStations = [...apiStations, ...dbStations];
-          setLoadingFuel(false);
+          // Combine: OSM first, then DB stations (avoiding duplicates by proximity)
+          const allPOIs = [...osmPOIs];
           
-          // Get all Brazil POIs (non-gas)
-          const allBrazilPois = getAllBrazilPOIs(coords[0], coords[1])
-            .filter(poi => poi.type !== "gas"); // Avoid duplicates
+          // Add DB stations that are not too close to OSM stations
+          dbStations.forEach(dbStation => {
+            const isTooClose = osmPOIs.some(osm => {
+              if (osm.type !== "gas") return false;
+              const latDiff = Math.abs(osm.lat - dbStation.lat);
+              const lngDiff = Math.abs(osm.lng - dbStation.lng);
+              return latDiff < 0.001 && lngDiff < 0.001; // ~100m
+            });
+            if (!isTooClose) {
+              allPOIs.push({ ...dbStation, brand: `MOVA - ${dbStation.brand || 'Parceiro'}` });
+            }
+          });
           
-          // Combine all data
-          setPois([...allStations, ...allBrazilPois]);
-          setLoading(false);
+          setPois(allPOIs);
+          setLoadingLocation(false);
+          
+          if (allPOIs.length === 0) {
+            toast.info("Nenhum ponto encontrado na região. Tente aumentar o raio de busca.");
+          }
         },
         async (error) => {
           console.error("Error getting location:", error);
           const defaultCoords: [number, number] = [-23.5505, -46.6333];
           setPosition(defaultCoords);
           
-          setLoadingFuel(true);
-          const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+          const osmPOIs = await fetchPOIs(defaultCoords[0], defaultCoords[1], 5);
           const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
-          setLoadingFuel(false);
           
-          const allStations = [...apiStations, ...dbStations];
-          const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1])
-            .filter(poi => poi.type !== "gas");
-          
-          setPois([...allStations, ...allBrazilPois]);
-          setLoading(false);
-          toast.error("Não foi possível obter sua localização. Usando localização padrão.");
+          const allPOIs = [...osmPOIs, ...dbStations];
+          setPois(allPOIs);
+          setLoadingLocation(false);
+          toast.error("Não foi possível obter sua localização. Usando São Paulo como padrão.");
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
@@ -1665,17 +208,11 @@ export default function DriverMap() {
       const defaultCoords: [number, number] = [-23.5505, -46.6333];
       setPosition(defaultCoords);
       
-      setLoadingFuel(true);
-      const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
+      const osmPOIs = await fetchPOIs(defaultCoords[0], defaultCoords[1], 5);
       const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
-      setLoadingFuel(false);
       
-      const allStations = [...apiStations, ...dbStations];
-      const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1])
-        .filter(poi => poi.type !== "gas");
-      
-      setPois([...allStations, ...allBrazilPois]);
-      setLoading(false);
+      setPois([...osmPOIs, ...dbStations]);
+      setLoadingLocation(false);
     }
   };
 
@@ -1695,6 +232,8 @@ export default function DriverMap() {
     toast.success(`Abrindo navegação para ${poi.name}`);
   };
 
+  const gasStationsCount = pois.filter(p => p.type === "gas").length;
+
   const filters = [
     { type: "gas", label: loadingFuel ? "..." : "Postos", icon: Fuel, color: "text-red-500" },
     { type: "rest", label: "Descanso", icon: Coffee, color: "text-blue-500" },
@@ -1702,9 +241,7 @@ export default function DriverMap() {
     { type: "parking", label: "Estacionar", icon: Car, color: "text-green-500" },
   ];
 
-  const gasStationsCount = pois.filter(p => p.type === "gas").length;
-
-  if (loading) {
+  if (loadingLocation) {
     return (
       <PageContainer title="Mapa">
         <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
@@ -1722,12 +259,12 @@ export default function DriverMap() {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {fuelDataSource === "anp" ? (
+              {dataSource === "osm" ? (
                 <Badge variant="outline" className="text-xs gap-1 text-green-600 border-green-300">
                   <Wifi className="w-3 h-3" />
-                  Preços ANP
+                  OpenStreetMap + ANP
                 </Badge>
-              ) : fuelDataSource === "database" ? (
+              ) : dataSource === "database" ? (
                 <Badge variant="outline" className="text-xs gap-1 text-blue-600 border-blue-300">
                   <Wifi className="w-3 h-3" />
                   Parceiros MOVA
@@ -1755,7 +292,7 @@ export default function DriverMap() {
           </div>
           
           {/* Regional averages card */}
-          {regionalAverages && fuelDataSource === "anp" && (
+          {regionalAverages && dataSource === "osm" && (
             <Card className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2 mb-2">
                 <Fuel className="w-4 h-4 text-green-600" />
@@ -1782,8 +319,26 @@ export default function DriverMap() {
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                Fonte: ANP - Atualização semanal
+                Fonte: OpenStreetMap (localizações) + ANP (preços regionais)
               </p>
+            </Card>
+          )}
+
+          {/* Empty state message */}
+          {pois.length === 0 && !loadingFuel && (
+            <Card className="p-4 border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                    Nenhum ponto encontrado
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                    Os dados são buscados em tempo real do OpenStreetMap. 
+                    Algumas regiões podem ter menos pontos cadastrados.
+                  </p>
+                </div>
+              </div>
             </Card>
           )}
         </div>
@@ -1949,6 +504,15 @@ export default function DriverMap() {
               <p className="text-muted-foreground">Nenhum favorito salvo ainda</p>
               <p className="text-sm text-muted-foreground/70 mt-1">
                 Toque no ❤️ para salvar seus locais favoritos
+              </p>
+            </Card>
+          )}
+          {filteredPois.length === 0 && !showFavoritesOnly && (
+            <Card className="p-6 text-center">
+              <MapPin className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground">Nenhum ponto encontrado</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Tente atualizar sua localização ou mudar o filtro
               </p>
             </Card>
           )}
