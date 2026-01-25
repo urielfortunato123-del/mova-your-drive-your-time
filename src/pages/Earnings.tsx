@@ -1,21 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { StatCard } from "@/components/ui/stat-card";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { DollarSign, TrendingUp, Clock, FileText, Loader2, Share2, Download } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Loader2, Share2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { jsPDF } from "jspdf";
-import { format } from "date-fns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { format, isWithinInterval, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PeriodFilter, PeriodType, DateRange } from "@/components/earnings/PeriodFilter";
 
 // Mock data for worked hours per day (last 7 days)
 const hoursWorkedData = [
@@ -33,8 +28,45 @@ export default function Earnings() {
   const { driver } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  
+  const today = new Date();
+  const [period, setPeriod] = useState<PeriodType>('month');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(today),
+    to: endOfMonth(today),
+  });
 
   const completedRides = rides.filter(r => r.status === 'completed');
+  
+  // Filter rides based on selected period
+  const filteredRides = useMemo(() => {
+    return completedRides.filter(ride => {
+      // Mock: usar data atual como se fossem corridas recentes
+      const rideDate = new Date(); // Em produção, usar ride.date
+      return isWithinInterval(rideDate, { start: dateRange.from, end: dateRange.to });
+    });
+  }, [completedRides, dateRange]);
+
+  // Calculate filtered earnings
+  const filteredEarnings = useMemo(() => {
+    const total = filteredRides.reduce((sum, ride) => sum + ride.estimatedValue, 0);
+    const waiting = filteredRides.reduce((sum, ride) => sum + (ride.waitingValue || 0), 0);
+    return { total, waiting };
+  }, [filteredRides]);
+
+  // Get period label for display
+  const getPeriodDisplayLabel = () => {
+    switch (period) {
+      case 'today':
+        return 'Hoje';
+      case 'week':
+        return 'Esta Semana';
+      case 'month':
+        return 'Este Mês';
+      case 'custom':
+        return `${format(dateRange.from, "dd 'de' MMM", { locale: ptBR })} - ${format(dateRange.to, "dd 'de' MMM", { locale: ptBR })}`;
+    }
+  };
 
   const generatePDFBlob = async (): Promise<Blob> => {
     const doc = new jsPDF();
@@ -243,15 +275,26 @@ export default function Earnings() {
   return (
     <PageContainer title="Ganhos">
       <div className="space-y-6">
+        {/* Period Filter */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Resumo</h2>
+          <PeriodFilter
+            period={period}
+            dateRange={dateRange}
+            onPeriodChange={setPeriod}
+            onDateRangeChange={setDateRange}
+          />
+        </div>
+
         {/* Main Earnings Card */}
         <div className="bg-card rounded-2xl border border-success/20 p-6 earnings-highlight animate-fade-in">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Total do Mês</p>
+            <p className="text-sm text-muted-foreground mb-1">{getPeriodDisplayLabel()}</p>
             <p className="text-4xl font-display font-bold text-success mb-2">
-              R$ {earnings.month.toFixed(2)}
+              R$ {(filteredEarnings.total + filteredEarnings.waiting).toFixed(2)}
             </p>
             <p className="text-sm text-muted-foreground">
-              Incluindo R$ {earnings.waitingTotal.toFixed(2)} em espera remunerada
+              Incluindo R$ {filteredEarnings.waiting.toFixed(2)} em espera remunerada
             </p>
           </div>
         </div>
@@ -259,13 +302,13 @@ export default function Earnings() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard
-            label="Hoje"
-            value={`R$ ${earnings.today.toFixed(2)}`}
+            label="Corridas"
+            value={filteredRides.length.toString()}
             icon={DollarSign}
           />
           <StatCard
-            label="Semana"
-            value={`R$ ${earnings.week.toFixed(2)}`}
+            label="Média/Corrida"
+            value={`R$ ${filteredRides.length > 0 ? (filteredEarnings.total / filteredRides.length).toFixed(2) : '0.00'}`}
             icon={TrendingUp}
           />
         </div>
@@ -329,7 +372,7 @@ export default function Earnings() {
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">Espera Remunerada</p>
               <p className="text-lg font-bold text-foreground">
-                R$ {earnings.waitingTotal.toFixed(2)}
+                R$ {filteredEarnings.waiting.toFixed(2)}
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -340,28 +383,34 @@ export default function Earnings() {
 
         {/* Recent Transactions */}
         <div className="animate-slide-up">
-          <h3 className="font-semibold text-foreground mb-3">Detalhamento</h3>
+          <h3 className="font-semibold text-foreground mb-3">Detalhamento ({filteredRides.length} corridas)</h3>
           <div className="bg-card rounded-xl border border-border divide-y divide-border">
-            {completedRides.slice(0, 5).map((ride) => (
-              <div key={ride.id} className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">{ride.passengerName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ride.pickupAddress.split(' - ')[0]}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-success">
-                    R$ {ride.estimatedValue.toFixed(2)}
-                  </p>
-                  {ride.waitingValue && ride.waitingValue > 0 && (
-                    <p className="text-xs text-warning">
-                      +R$ {ride.waitingValue.toFixed(2)} espera
-                    </p>
-                  )}
-                </div>
+            {filteredRides.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                <p>Nenhuma corrida no período selecionado</p>
               </div>
-            ))}
+            ) : (
+              filteredRides.slice(0, 5).map((ride) => (
+                <div key={ride.id} className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">{ride.passengerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {ride.pickupAddress.split(' - ')[0]}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-success">
+                      R$ {ride.estimatedValue.toFixed(2)}
+                    </p>
+                    {ride.waitingValue && ride.waitingValue > 0 && (
+                      <p className="text-xs text-warning">
+                        +R$ {ride.waitingValue.toFixed(2)} espera
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
