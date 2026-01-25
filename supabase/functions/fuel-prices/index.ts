@@ -25,6 +25,44 @@ interface FuelStation {
   priceSource: string;
 }
 
+interface OverpassTags {
+  name?: string;
+  brand?: string;
+  operator?: string;
+  opening_hours?: string;
+  "addr:street"?: string;
+  "addr:housenumber"?: string;
+  "addr:city"?: string;
+  amenity?: string;
+  highway?: string;
+}
+
+interface OverpassElement {
+  type: string;
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: OverpassTags;
+}
+
+interface POI {
+  id: string;
+  name: string;
+  type: "gas" | "rest" | "bathroom" | "parking";
+  lat: number;
+  lng: number;
+  address: string;
+  brand?: string;
+  open24h: boolean;
+  prices?: {
+    gasolina?: number;
+    etanol?: number;
+    diesel?: number;
+    gnv?: number;
+  };
+}
+
 // ANP regional price averages (updated weekly - Jan 2025 reference)
 // Source: https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos
 const ANP_REGIONAL_PRICES: Record<string, { gasolina: number; etanol: number; diesel: number; gnv: number }> = {
@@ -64,7 +102,6 @@ const ANP_REGIONAL_PRICES: Record<string, { gasolina: number; etanol: number; di
 
 // Get state from coordinates (approximate)
 function getStateFromCoordinates(lat: number, lng: number): string {
-  // Approximate state boundaries
   if (lat >= -24 && lat <= -19.5 && lng >= -53 && lng <= -44) return "SP";
   if (lat >= -23.5 && lat <= -20.5 && lng >= -44 && lng <= -40.5) return "RJ";
   if (lat >= -22.5 && lat <= -14 && lng >= -51 && lng <= -40) return "MG";
@@ -101,71 +138,152 @@ function addPriceVariation(basePrice: number): number {
   return Math.round((basePrice * (1 + variation)) * 100) / 100;
 }
 
-// Generate realistic stations based on location
-function generateStationsForLocation(lat: number, lng: number): FuelStation[] {
-  const state = getStateFromCoordinates(lat, lng);
-  const basePrices = ANP_REGIONAL_PRICES[state] || ANP_REGIONAL_PRICES["SP"];
-  const now = new Date().toISOString();
+// Fetch real POIs from OpenStreetMap Overpass API
+async function fetchPOIsFromOverpass(lat: number, lng: number, radiusMeters: number = 5000): Promise<POI[]> {
+  const overpassUrl = "https://overpass-api.de/api/interpreter";
   
-  const brands = [
-    { name: "Shell", hasGnv: false },
-    { name: "Ipiranga", hasGnv: false },
-    { name: "Petrobras", hasGnv: true },
-    { name: "Ale", hasGnv: false },
-    { name: "Raízen", hasGnv: false },
-    { name: "Vibra", hasGnv: true },
-  ];
-  
-  const stations: FuelStation[] = [];
-  
-  // Generate 8 stations around the user's location
-  for (let i = 0; i < 8; i++) {
-    const brand = brands[i % brands.length];
-    const offsetLat = (Math.random() - 0.5) * 0.04; // ~2km radius
-    const offsetLng = (Math.random() - 0.5) * 0.04;
-    
-    const prices: FuelStation["prices"] = {
-      gasolina: addPriceVariation(basePrices.gasolina),
-      etanol: addPriceVariation(basePrices.etanol),
-      diesel: addPriceVariation(basePrices.diesel),
-    };
-    
-    if (brand.hasGnv) {
-      prices.gnv = addPriceVariation(basePrices.gnv);
-    }
-    
-    stations.push({
-      id: `station-${state}-${i}`,
-      name: `Posto ${brand.name}`,
-      brand: brand.name,
-      lat: lat + offsetLat,
-      lng: lng + offsetLng,
-      address: `Próximo à sua localização`,
-      city: getCityName(state),
-      state: state,
-      open24h: Math.random() > 0.3, // 70% chance of 24h
-      prices,
-      updatedAt: now,
-      priceSource: "ANP",
+  // Query for fuel stations, cafes, restaurants, rest areas, and toilets
+  const query = `
+    [out:json][timeout:25];
+    (
+      // Fuel stations
+      node["amenity"="fuel"](around:${radiusMeters},${lat},${lng});
+      way["amenity"="fuel"](around:${radiusMeters},${lat},${lng});
+      
+      // Rest areas / Cafes
+      node["amenity"="cafe"](around:${radiusMeters},${lat},${lng});
+      node["amenity"="restaurant"](around:${radiusMeters},${lat},${lng});
+      node["highway"="rest_area"](around:${radiusMeters},${lat},${lng});
+      way["highway"="rest_area"](around:${radiusMeters},${lat},${lng});
+      node["highway"="services"](around:${radiusMeters},${lat},${lng});
+      way["highway"="services"](around:${radiusMeters},${lat},${lng});
+      
+      // Toilets
+      node["amenity"="toilets"](around:${radiusMeters},${lat},${lng});
+      
+      // Parking
+      node["amenity"="parking"](around:${radiusMeters},${lat},${lng});
+      way["amenity"="parking"](around:${radiusMeters},${lat},${lng});
+    );
+    out center;
+  `;
+
+  try {
+    const response = await fetch(overpassUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: `data=${encodeURIComponent(query)}`,
     });
+
+    if (!response.ok) {
+      throw new Error(`Overpass API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const elements: OverpassElement[] = data.elements || [];
+    
+    const state = getStateFromCoordinates(lat, lng);
+    const basePrices = ANP_REGIONAL_PRICES[state] || ANP_REGIONAL_PRICES["SP"];
+
+    const pois: POI[] = elements
+      .filter((el) => {
+        // Get coordinates
+        const elLat = el.lat || el.center?.lat;
+        const elLng = el.lon || el.center?.lon;
+        return elLat && elLng;
+      })
+      .map((el) => {
+        const elLat = el.lat || el.center?.lat!;
+        const elLng = el.lon || el.center?.lon!;
+        const tags = el.tags || {};
+        
+        // Determine POI type
+        let type: POI["type"] = "gas";
+        if (tags.amenity === "fuel") {
+          type = "gas";
+        } else if (tags.amenity === "cafe" || tags.amenity === "restaurant" || 
+                   tags.highway === "rest_area" || tags.highway === "services") {
+          type = "rest";
+        } else if (tags.amenity === "toilets") {
+          type = "bathroom";
+        } else if (tags.amenity === "parking") {
+          type = "parking";
+        }
+        
+        // Build name
+        const name = tags.name || tags.brand || tags.operator || 
+          (type === "gas" ? "Posto de Combustível" : 
+           type === "rest" ? "Área de Descanso" : 
+           type === "bathroom" ? "Banheiro Público" : 
+           "Estacionamento");
+        
+        // Build address
+        const addressParts: string[] = [];
+        if (tags["addr:street"]) {
+          addressParts.push(tags["addr:street"]);
+          if (tags["addr:housenumber"]) {
+            addressParts[0] += `, ${tags["addr:housenumber"]}`;
+          }
+        }
+        if (tags["addr:city"]) {
+          addressParts.push(tags["addr:city"]);
+        }
+        const address = addressParts.join(" - ") || "Endereço não disponível";
+        
+        // Check if open 24h
+        const open24h = tags.opening_hours?.toLowerCase().includes("24") || false;
+        
+        // Generate prices for gas stations
+        let prices: POI["prices"] = undefined;
+        if (type === "gas") {
+          prices = {
+            gasolina: addPriceVariation(basePrices.gasolina),
+            etanol: addPriceVariation(basePrices.etanol),
+            diesel: addPriceVariation(basePrices.diesel),
+          };
+          // Some stations have GNV
+          if (Math.random() > 0.7) {
+            prices.gnv = addPriceVariation(basePrices.gnv);
+          }
+        }
+        
+        return {
+          id: `osm-${el.type}-${el.id}`,
+          name,
+          type,
+          lat: elLat,
+          lng: elLng,
+          address,
+          brand: tags.brand || tags.operator,
+          open24h,
+          prices,
+        };
+      });
+
+    return pois;
+  } catch (error) {
+    console.error("Error fetching from Overpass API:", error);
+    return [];
   }
-  
-  return stations;
 }
 
-function getCityName(state: string): string {
-  const capitals: Record<string, string> = {
-    "SP": "São Paulo", "RJ": "Rio de Janeiro", "MG": "Belo Horizonte",
-    "ES": "Vitória", "PR": "Curitiba", "SC": "Florianópolis",
-    "RS": "Porto Alegre", "GO": "Goiânia", "DF": "Brasília",
-    "MT": "Cuiabá", "MS": "Campo Grande", "BA": "Salvador",
-    "PE": "Recife", "CE": "Fortaleza", "MA": "São Luís",
-    "PB": "João Pessoa", "RN": "Natal", "AL": "Maceió",
-    "SE": "Aracaju", "PI": "Teresina", "AM": "Manaus",
-    "PA": "Belém", "AC": "Rio Branco", "RO": "Porto Velho",
-    "RR": "Boa Vista", "AP": "Macapá", "TO": "Palmas",
-  };
-  return capitals[state] || "São Paulo";
+// Haversine formula to calculate distance between two coordinates
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRad(deg: number): number {
+  return deg * (Math.PI / 180);
 }
 
 serve(async (req) => {
@@ -184,15 +302,33 @@ serve(async (req) => {
     }
 
     const state = getStateFromCoordinates(lat, lng);
-    console.log(`Fetching fuel prices for lat: ${lat}, lng: ${lng}, state: ${state}, radius: ${radiusKm}km`);
+    const radiusMeters = radiusKm * 1000;
+    console.log(`Fetching POIs for lat: ${lat}, lng: ${lng}, state: ${state}, radius: ${radiusKm}km`);
     
-    const stations = generateStationsForLocation(lat, lng);
+    // Fetch real data from OpenStreetMap
+    const pois = await fetchPOIsFromOverpass(lat, lng, radiusMeters);
+    console.log(`Found ${pois.length} POIs from OpenStreetMap`);
     
-    // Calculate distance from user for each station
-    const stationsWithDistance = stations.map(station => {
+    // Separate gas stations from other POIs
+    const gasStations = pois.filter(p => p.type === "gas");
+    const otherPOIs = pois.filter(p => p.type !== "gas");
+    
+    // Calculate distance and format stations
+    const stationsWithDistance = gasStations.map(station => {
       const distance = calculateDistance(lat, lng, station.lat, station.lng);
       return {
-        ...station,
+        id: station.id,
+        name: station.name,
+        brand: station.brand || "Independente",
+        lat: station.lat,
+        lng: station.lng,
+        address: station.address,
+        city: "",
+        state: state,
+        open24h: station.open24h,
+        prices: station.prices || {},
+        updatedAt: new Date().toISOString(),
+        priceSource: "ANP",
         distance: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`,
         distanceValue: distance,
       };
@@ -201,42 +337,37 @@ serve(async (req) => {
     // Sort by distance
     stationsWithDistance.sort((a, b) => a.distanceValue - b.distanceValue);
 
+    // Format other POIs with distance
+    const otherPOIsWithDistance = otherPOIs.map(poi => {
+      const distance = calculateDistance(lat, lng, poi.lat, poi.lng);
+      return {
+        ...poi,
+        distance: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`,
+        distanceValue: distance,
+      };
+    }).sort((a, b) => a.distanceValue - b.distanceValue);
+
     // Get regional averages for context
     const regionalPrices = ANP_REGIONAL_PRICES[state] || ANP_REGIONAL_PRICES["SP"];
 
     return new Response(
       JSON.stringify({ 
         stations: stationsWithDistance,
-        source: "ANP Regional Averages",
+        otherPOIs: otherPOIsWithDistance,
+        source: pois.length > 0 ? "OpenStreetMap + ANP" : "No data available",
         state: state,
         regionalAverages: regionalPrices,
         updatedAt: new Date().toISOString(),
-        disclaimer: "Preços baseados em médias regionais da ANP. Valores reais podem variar.",
+        disclaimer: "Localizações reais do OpenStreetMap. Preços baseados em médias regionais da ANP.",
+        totalPOIs: pois.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error fetching fuel prices:", error);
+    console.error("Error fetching POIs:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to fetch fuel prices" }),
+      JSON.stringify({ error: "Failed to fetch POIs", details: String(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
-
-// Haversine formula to calculate distance between two coordinates
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function toRad(deg: number): number {
-  return deg * (Math.PI / 180);
-}
