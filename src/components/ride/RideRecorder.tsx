@@ -4,17 +4,17 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Video, 
-  VideoOff, 
   Circle, 
   Square, 
-  Download,
   Camera,
   Minimize2,
   Maximize2,
-  X
+  X,
+  FolderOpen
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { useVideoRecordings } from "@/hooks/useVideoRecordings";
+import { RecordingsHistory } from "./RecordingsHistory";
 
 interface RideRecorderProps {
   rideId: string;
@@ -25,14 +25,18 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  
+  const { saveRecording, recordings } = useVideoRecordings();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingStartTimeRef = useRef<number>(0);
 
   // Format recording time as MM:SS
   const formatTime = (seconds: number) => {
@@ -91,6 +95,7 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
     }
 
     chunksRef.current = [];
+    recordingStartTimeRef.current = Date.now();
     
     const mediaRecorder = new MediaRecorder(streamRef.current, {
       mimeType: 'video/webm;codecs=vp9,opus'
@@ -102,9 +107,18 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
       }
     };
     
-    mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      saveRecording(blob);
+      const duration = Math.floor((Date.now() - recordingStartTimeRef.current) / 1000);
+      
+      try {
+        await saveRecording(blob, rideId, passengerName, duration);
+        toast.success("Gravação salva!", {
+          description: "Disponível na lista de gravações"
+        });
+      } catch (error) {
+        toast.error("Erro ao salvar gravação");
+      }
     };
     
     mediaRecorderRef.current = mediaRecorder;
@@ -119,7 +133,7 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
     }, 1000);
     
     toast.success("Gravação iniciada");
-  }, []);
+  }, [rideId, passengerName, saveRecording]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
@@ -134,27 +148,6 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
     }
   }, [isRecording]);
 
-  // Save recording to device
-  const saveRecording = useCallback((blob: Blob) => {
-    const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
-    const sanitizedName = passengerName.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `corrida_${sanitizedName}_${timestamp}.webm`;
-    
-    // Create download link
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast.success(`Vídeo salvo: ${filename}`, {
-      description: "Verifique a pasta de Downloads do seu dispositivo"
-    });
-  }, [passengerName]);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -164,6 +157,24 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
       }
     };
   }, [stopPreview]);
+
+  // Show history view
+  if (showHistory) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowHistory(false)}
+          >
+            ← Voltar
+          </Button>
+        </div>
+        <RecordingsHistory />
+      </div>
+    );
+  }
 
   // Minimized view (floating)
   if (isMinimized && isPreviewing) {
@@ -212,18 +223,33 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
         <div className="flex items-center gap-2">
           <Video className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Gravar Corrida</h3>
+          {recordings.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {recordings.length}
+            </Badge>
+          )}
         </div>
         
-        {isPreviewing && (
+        <div className="flex items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
             className="h-8 w-8"
-            onClick={() => setIsMinimized(true)}
+            onClick={() => setShowHistory(true)}
           >
-            <Minimize2 className="w-4 h-4" />
+            <FolderOpen className="w-4 h-4" />
           </Button>
-        )}
+          {isPreviewing && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setIsMinimized(true)}
+            >
+              <Minimize2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Camera Preview */}
@@ -315,7 +341,7 @@ export function RideRecorder({ rideId, passengerName }: RideRecorderProps) {
       </div>
       
       <p className="text-xs text-muted-foreground text-center">
-        📱 O vídeo será salvo na pasta Downloads do seu dispositivo
+        📱 Vídeos salvos no app • Toque em <FolderOpen className="w-3 h-3 inline" /> para ver gravações
       </p>
     </Card>
   );
