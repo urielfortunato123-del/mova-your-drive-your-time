@@ -105,11 +105,30 @@ export function useNotifications() {
     });
   }, [sendNotification]);
 
+  const notifyGoalReached = useCallback((currentValue: number, goalValue: number) => {
+    const valueString = currentValue.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+    const goalString = goalValue.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+
+    return sendNotification('🎉 Meta Diária Atingida!', {
+      body: `Parabéns! Você alcançou ${valueString} hoje (meta: ${goalString}). Continue assim!`,
+      tag: 'daily-goal-reached',
+      requireInteraction: true,
+      data: { type: 'goal-reached', current: currentValue, goal: goalValue },
+    });
+  }, [sendNotification]);
+
   return {
     ...permissionState,
     requestPermission,
     sendNotification,
     scheduleRideReminder,
     notifyNewRide,
+    notifyGoalReached,
   };
 }
