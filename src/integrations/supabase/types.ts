@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          latitude: number | null
+          longitude: number | null
+          message: string
+          message_type: string
+          ride_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          message: string
+          message_type?: string
+          ride_id: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          message?: string
+          message_type?: string
+          ride_id?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: []
+      }
       driver_profiles: {
         Row: {
           city: string | null
