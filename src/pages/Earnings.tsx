@@ -3,12 +3,18 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { StatCard } from "@/components/ui/stat-card";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { DollarSign, TrendingUp, Clock, FileText, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, FileText, Loader2, Share2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { jsPDF } from "jspdf";
 import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ptBR } from "date-fns/locale";
 
 // Mock data for worked hours per day (last 7 days)
@@ -26,17 +32,15 @@ export default function Earnings() {
   const { earnings, rides } = useDriver();
   const { driver } = useAuth();
   const [exporting, setExporting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const completedRides = rides.filter(r => r.status === 'completed');
 
-  const handleExportPDF = async () => {
-    setExporting(true);
-    
-    try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      let yPos = 20;
+  const generatePDFBlob = async (): Promise<Blob> => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    let yPos = 20;
 
       // Header
       doc.setFontSize(24);
@@ -179,9 +183,21 @@ export default function Earnings() {
       doc.text(`Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`, margin, yPos);
       doc.text("MOVA - Motorista de Transporte Executivo", pageWidth - margin - 60, yPos);
 
-      // Save
+      return doc.output('blob');
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const blob = await generatePDFBlob();
       const fileName = `MOVA_Relatorio_${format(new Date(), "yyyy-MM-dd")}.pdf`;
-      doc.save(fileName);
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
 
       toast.success("Relatório exportado com sucesso!");
     } catch (error) {
@@ -189,6 +205,35 @@ export default function Earnings() {
       toast.error("Erro ao gerar relatório");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleSharePDF = async () => {
+    setSharing(true);
+    try {
+      const blob = await generatePDFBlob();
+      const fileName = `MOVA_Relatorio_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Relatório de Ganhos MOVA',
+          text: `Relatório de ganhos - ${format(new Date(), "dd/MM/yyyy")}`,
+          files: [file],
+        });
+        toast.success("Relatório compartilhado!");
+      } else {
+        // Fallback: download the file
+        handleExportPDF();
+        toast.info("Compartilhamento não suportado. Arquivo baixado.");
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error("Error sharing PDF:", error);
+        toast.error("Erro ao compartilhar relatório");
+      }
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -320,19 +365,34 @@ export default function Earnings() {
           </div>
         </div>
 
-        {/* Export Button */}
-        <Button
-          onClick={handleExportPDF}
-          disabled={exporting}
-          className="w-full gap-2 bg-success hover:bg-success/90"
-        >
-          {exporting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <FileText className="w-4 h-4" />
-          )}
-          {exporting ? "Gerando PDF..." : "Exportar Relatório (PDF)"}
-        </Button>
+        {/* Export/Share Buttons */}
+        <div className="flex gap-2">
+          <Button
+            onClick={handleExportPDF}
+            disabled={exporting || sharing}
+            variant="outline"
+            className="flex-1 gap-2"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {exporting ? "Baixando..." : "Baixar PDF"}
+          </Button>
+          <Button
+            onClick={handleSharePDF}
+            disabled={exporting || sharing}
+            className="flex-1 gap-2 bg-success hover:bg-success/90"
+          >
+            {sharing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
+            {sharing ? "Compartilhando..." : "Compartilhar"}
+          </Button>
+        </div>
       </div>
     </PageContainer>
   );
