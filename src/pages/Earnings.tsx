@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { StatCard } from "@/components/ui/stat-card";
 import { useDriver } from "@/contexts/DriverContext";
-import { DollarSign, TrendingUp, Clock, FileText } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DollarSign, TrendingUp, Clock, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
+import { jsPDF } from "jspdf";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Mock data for worked hours per day (last 7 days)
 const hoursWorkedData = [
@@ -20,11 +24,172 @@ const hoursWorkedData = [
 
 export default function Earnings() {
   const { earnings, rides } = useDriver();
+  const { driver } = useAuth();
+  const [exporting, setExporting] = useState(false);
 
   const completedRides = rides.filter(r => r.status === 'completed');
 
-  const handleExport = () => {
-    toast.info("Exportação disponível em breve!");
+  const handleExportPDF = async () => {
+    setExporting(true);
+    
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = 20;
+
+      // Header
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 51); // Green
+      doc.text("MOVA", margin, yPos);
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(128, 128, 128);
+      doc.text("Relatório de Ganhos", margin, yPos + 8);
+      
+      // Date
+      doc.setFontSize(10);
+      doc.text(format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }), pageWidth - margin - 50, yPos);
+      
+      yPos += 25;
+
+      // Driver Info
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text("Motorista:", margin, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text(driver?.name || "Não identificado", margin + 30, yPos);
+      yPos += 8;
+      
+      if (driver?.vehicle) {
+        doc.setFont("helvetica", "bold");
+        doc.text("Veículo:", margin, yPos);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${driver.vehicle} - ${driver.plate || ''}`, margin + 25, yPos);
+        yPos += 8;
+      }
+
+      yPos += 10;
+
+      // Summary Box
+      doc.setFillColor(240, 255, 240);
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 40, 3, 3, "F");
+      
+      yPos += 12;
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text("RESUMO FINANCEIRO", margin + 5, yPos);
+      
+      yPos += 12;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 51);
+      doc.text(`Total do Mês: R$ ${earnings.month.toFixed(2)}`, margin + 5, yPos);
+      
+      yPos += 10;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Hoje: R$ ${earnings.today.toFixed(2)}  |  Semana: R$ ${earnings.week.toFixed(2)}  |  Espera: R$ ${earnings.waitingTotal.toFixed(2)}`, margin + 5, yPos);
+
+      yPos += 25;
+
+      // Hours Summary
+      const totalWeekHours = hoursWorkedData.reduce((sum, d) => sum + d.hours, 0);
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text("Horas Trabalhadas (7 dias)", margin, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${totalWeekHours.toFixed(1)}h total`, pageWidth - margin - 30, yPos);
+      
+      yPos += 10;
+      
+      // Hours table
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(margin, yPos, pageWidth - margin * 2, 20, 2, 2, "F");
+      
+      const dayWidth = (pageWidth - margin * 2) / 7;
+      hoursWorkedData.forEach((d, i) => {
+        const x = margin + i * dayWidth + dayWidth / 2;
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(d.day, x, yPos + 7, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${d.hours}h`, x, yPos + 15, { align: "center" });
+        doc.setFont("helvetica", "normal");
+      });
+
+      yPos += 30;
+
+      // Rides List
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text("Detalhamento de Corridas", margin, yPos);
+      yPos += 10;
+
+      // Table header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(margin, yPos, pageWidth - margin * 2, 8, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Passageiro", margin + 3, yPos + 6);
+      doc.text("Local", margin + 55, yPos + 6);
+      doc.text("Valor", pageWidth - margin - 30, yPos + 6);
+      doc.text("Espera", pageWidth - margin - 10, yPos + 6);
+      yPos += 10;
+
+      // Table rows
+      doc.setFont("helvetica", "normal");
+      completedRides.slice(0, 15).forEach((ride, index) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        if (index % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(margin, yPos - 2, pageWidth - margin * 2, 10, "F");
+        }
+
+        doc.setFontSize(9);
+        doc.setTextColor(0, 0, 0);
+        doc.text(ride.passengerName.substring(0, 20), margin + 3, yPos + 5);
+        doc.setTextColor(100, 100, 100);
+        doc.text(ride.pickupAddress.split(' - ')[0].substring(0, 25), margin + 55, yPos + 5);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`R$ ${ride.estimatedValue.toFixed(2)}`, pageWidth - margin - 30, yPos + 5);
+        if (ride.waitingValue && ride.waitingValue > 0) {
+          doc.setTextColor(204, 153, 0);
+          doc.text(`+R$ ${ride.waitingValue.toFixed(2)}`, pageWidth - margin - 10, yPos + 5);
+        }
+        yPos += 10;
+      });
+
+      yPos += 10;
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Documento gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`, margin, yPos);
+      doc.text("MOVA - Motorista de Transporte Executivo", pageWidth - margin - 60, yPos);
+
+      // Save
+      const fileName = `MOVA_Relatorio_${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      doc.save(fileName);
+
+      toast.success("Relatório exportado com sucesso!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const totalWeekHours = hoursWorkedData.reduce((sum, d) => sum + d.hours, 0);
@@ -157,12 +322,16 @@ export default function Earnings() {
 
         {/* Export Button */}
         <Button
-          onClick={handleExport}
-          variant="outline"
-          className="w-full gap-2"
+          onClick={handleExportPDF}
+          disabled={exporting}
+          className="w-full gap-2 bg-success hover:bg-success/90"
         >
-          <FileText className="w-4 h-4" />
-          Exportar Relatório (PDF)
+          {exporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileText className="w-4 h-4" />
+          )}
+          {exporting ? "Gerando PDF..." : "Exportar Relatório (PDF)"}
         </Button>
       </div>
     </PageContainer>
