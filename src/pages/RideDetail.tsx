@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { WaitTimer } from "@/components/ui/wait-timer";
 import { Button } from "@/components/ui/button";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { PassengerRatingDialog } from "@/components/ride/PassengerRatingDialog";
+import { RideRecorder } from "@/components/ride/RideRecorder";
 import { useDriver } from "@/contexts/DriverContext";
 import { 
   MapPin, 
@@ -209,6 +210,11 @@ export default function RideDetail() {
             <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
           </button>
         </div>
+
+        {/* Ride Recorder */}
+        {(ride.status === 'confirmed' || ride.status === 'in_progress') && (
+          <RideRecorder rideId={ride.id} passengerName={ride.passengerName} />
+        )}
 
         {/* Action Buttons */}
         {ride.status === 'confirmed' && !isActiveTimer && (
