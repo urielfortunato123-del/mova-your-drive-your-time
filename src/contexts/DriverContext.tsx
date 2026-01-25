@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Ride, DriverStatus, DailyStats, EarningsSummary, Partner, ChatMessage } from '@/types/ride';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 interface DriverContextType {
   status: DriverStatus;
@@ -22,74 +25,16 @@ interface DriverContextType {
   onlineStartTime: Date | null;
   todayOnlineSeconds: number;
   toggleOnline: () => void;
+  // Data management
+  isLoading: boolean;
+  refreshRides: () => Promise<void>;
+  addRide: (ride: Omit<Ride, 'id'>) => Promise<void>;
 }
 
 const DriverContext = createContext<DriverContextType | undefined>(undefined);
 
-// Mock messages for demo
-const mockMessages: ChatMessage[] = [
-  {
-    id: 'msg1',
-    rideId: '1',
-    sender: 'passenger',
-    message: 'Olá! Estou aguardando na portaria do prédio.',
-    timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-    read: false,
-  },
-  {
-    id: 'msg2',
-    rideId: '1',
-    sender: 'passenger',
-    message: 'Estou com uma mala grande, ok?',
-    timestamp: new Date(Date.now() - 3 * 60000).toISOString(),
-    read: false,
-  },
-];
-
-// Mock data
-const mockRides: Ride[] = [
-  {
-    id: '1',
-    passengerName: 'Ana Santos',
-    passengerPhone: '(11) 98888-7777',
-    pickupTime: new Date(Date.now() + 30 * 60000).toISOString(),
-    pickupAddress: 'Av. Paulista, 1000 - Bela Vista, São Paulo',
-    dropoffAddress: 'Rua Augusta, 500 - Consolação, São Paulo',
-    estimatedValue: 45.00,
-    status: 'confirmed',
-  },
-  {
-    id: '2',
-    passengerName: 'Roberto Lima',
-    passengerPhone: '(11) 97777-6666',
-    pickupTime: new Date(Date.now() + 90 * 60000).toISOString(),
-    pickupAddress: 'Shopping Ibirapuera - Moema, São Paulo',
-    dropoffAddress: 'Aeroporto de Congonhas, São Paulo',
-    estimatedValue: 65.00,
-    status: 'confirmed',
-  },
-  {
-    id: '3',
-    passengerName: 'Maria Oliveira',
-    passengerPhone: '(11) 96666-5555',
-    pickupTime: new Date(Date.now() + 180 * 60000).toISOString(),
-    pickupAddress: 'Hospital Sírio-Libanês - Bela Vista',
-    dropoffAddress: 'Parque do Ibirapuera - Moema',
-    estimatedValue: 38.00,
-    status: 'confirmed',
-  },
-  {
-    id: '4',
-    passengerName: 'João Pereira',
-    pickupTime: new Date(Date.now() - 2 * 3600000).toISOString(),
-    pickupAddress: 'Estação Sé - Centro',
-    dropoffAddress: 'Rua Oscar Freire - Jardins',
-    estimatedValue: 52.00,
-    status: 'completed',
-    waitingTime: 5,
-    waitingValue: 1.25,
-  },
-];
+// Mock messages for demo (will be replaced with real chat later)
+const mockMessages: ChatMessage[] = [];
 
 const mockPartners: Partner[] = [
   { id: '1', name: 'Posto Shell - Paulista', category: 'Combustível', discount: '5% de desconto' },
@@ -100,15 +45,122 @@ const mockPartners: Partner[] = [
 ];
 
 export function DriverProvider({ children }: { children: ReactNode }) {
+  const { driver } = useAuth();
   const [status, setStatus] = useState<DriverStatus>('available');
-  const [rides, setRides] = useState<Ride[]>(mockRides);
+  const [rides, setRides] = useState<Ride[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
   const [activeWaitTimer, setActiveWaitTimer] = useState<{ rideId: string; startTime: Date } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Online time tracking
   const [isOnline, setIsOnline] = useState(false);
   const [onlineStartTime, setOnlineStartTime] = useState<Date | null>(null);
   const [todayOnlineSeconds, setTodayOnlineSeconds] = useState(0);
+
+  // Fetch rides from database
+  const fetchRides = useCallback(async () => {
+    if (!driver?.id) {
+      setRides([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('driver_id', driver.id)
+        .order('pickup_time', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching rides:', error);
+        return;
+      }
+
+      const mappedRides: Ride[] = (data || []).map(ride => ({
+        id: ride.id,
+        passengerName: ride.passenger_name,
+        passengerPhone: ride.passenger_phone || undefined,
+        pickupTime: ride.pickup_time,
+        pickupAddress: ride.pickup_address,
+        dropoffAddress: ride.dropoff_address,
+        estimatedValue: Number(ride.estimated_value),
+        status: ride.status as Ride['status'],
+        waitingTime: ride.waiting_time || undefined,
+        waitingValue: ride.waiting_value ? Number(ride.waiting_value) : undefined,
+        startedAt: ride.started_at || undefined,
+        completedAt: ride.completed_at || undefined,
+        cancelReason: ride.cancel_reason || undefined,
+      }));
+
+      setRides(mappedRides);
+    } catch (error) {
+      console.error('Error fetching rides:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [driver?.id]);
+
+  // Refresh rides
+  const refreshRides = useCallback(async () => {
+    setIsLoading(true);
+    await fetchRides();
+  }, [fetchRides]);
+
+  // Add new ride
+  const addRide = useCallback(async (ride: Omit<Ride, 'id'>) => {
+    if (!driver?.id) return;
+
+    const { error } = await supabase
+      .from('rides')
+      .insert({
+        driver_id: driver.id,
+        passenger_name: ride.passengerName,
+        passenger_phone: ride.passengerPhone || null,
+        pickup_time: ride.pickupTime,
+        pickup_address: ride.pickupAddress,
+        dropoff_address: ride.dropoffAddress,
+        estimated_value: ride.estimatedValue,
+        status: ride.status,
+      });
+
+    if (error) {
+      console.error('Error adding ride:', error);
+      throw error;
+    }
+
+    await refreshRides();
+  }, [driver?.id, refreshRides]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRides();
+  }, [fetchRides]);
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    if (!driver?.id) return;
+
+    const channel = supabase
+      .channel('rides-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rides',
+          filter: `driver_id=eq.${driver.id}`,
+        },
+        () => {
+          fetchRides();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [driver?.id, fetchRides]);
 
   // Update online timer every second
   useEffect(() => {
@@ -117,7 +169,6 @@ export function DriverProvider({ children }: { children: ReactNode }) {
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - onlineStartTime.getTime()) / 1000);
       setTodayOnlineSeconds(prev => {
-        // Calculate base + elapsed from current session
         const baseSeconds = prev - elapsed + 1;
         return baseSeconds + elapsed + 1;
       });
@@ -128,20 +179,25 @@ export function DriverProvider({ children }: { children: ReactNode }) {
 
   const toggleOnline = () => {
     if (isOnline) {
-      // Going offline - save accumulated time
       setIsOnline(false);
       setOnlineStartTime(null);
     } else {
-      // Going online
       setIsOnline(true);
       setOnlineStartTime(new Date());
     }
   };
 
+  const today = new Date();
+  const todayStart = startOfDay(today);
+  const todayEnd = endOfDay(today);
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
+
   const todayRides = rides.filter(ride => {
     const rideDate = new Date(ride.pickupTime);
-    const today = new Date();
-    return rideDate.toDateString() === today.toDateString();
+    return rideDate >= todayStart && rideDate <= todayEnd;
   });
 
   const confirmedTodayRides = todayRides.filter(r => r.status === 'confirmed' || r.status === 'in_progress');
@@ -156,12 +212,29 @@ export function DriverProvider({ children }: { children: ReactNode }) {
     completedRides: todayRides.filter(r => r.status === 'completed').length,
   };
 
+  // Calculate earnings based on actual ride dates
   const completedRides = rides.filter(r => r.status === 'completed');
+  
+  const todayCompletedRides = completedRides.filter(r => {
+    const rideDate = new Date(r.completedAt || r.pickupTime);
+    return rideDate >= todayStart && rideDate <= todayEnd;
+  });
+
+  const weekCompletedRides = completedRides.filter(r => {
+    const rideDate = new Date(r.completedAt || r.pickupTime);
+    return rideDate >= weekStart && rideDate <= weekEnd;
+  });
+
+  const monthCompletedRides = completedRides.filter(r => {
+    const rideDate = new Date(r.completedAt || r.pickupTime);
+    return rideDate >= monthStart && rideDate <= monthEnd;
+  });
+
   const earnings: EarningsSummary = {
-    today: completedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0),
-    week: completedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0) * 5,
-    month: completedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0) * 22,
-    waitingTotal: completedRides.reduce((sum, r) => sum + (r.waitingValue || 0), 0),
+    today: todayCompletedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0),
+    week: weekCompletedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0),
+    month: monthCompletedRides.reduce((sum, r) => sum + r.estimatedValue + (r.waitingValue || 0), 0),
+    waitingTotal: monthCompletedRides.reduce((sum, r) => sum + (r.waitingValue || 0), 0),
   };
 
   const startWaitTimer = (rideId: string) => {
@@ -172,9 +245,36 @@ export function DriverProvider({ children }: { children: ReactNode }) {
     setActiveWaitTimer(null);
   };
 
-  const updateRideStatus = (rideId: string, newStatus: Ride['status']) => {
+  const updateRideStatus = async (rideId: string, newStatus: Ride['status']) => {
+    const updates: Record<string, unknown> = { status: newStatus };
+    
+    if (newStatus === 'in_progress') {
+      updates.started_at = new Date().toISOString();
+    } else if (newStatus === 'completed') {
+      updates.completed_at = new Date().toISOString();
+      
+      // Calculate waiting value if timer was active
+      if (activeWaitTimer?.rideId === rideId) {
+        const minutes = Math.floor((Date.now() - activeWaitTimer.startTime.getTime()) / 60000);
+        updates.waiting_time = minutes;
+        updates.waiting_value = minutes * 0.25; // R$ 0.25 per minute
+        stopWaitTimer();
+      }
+    }
+
+    const { error } = await supabase
+      .from('rides')
+      .update(updates)
+      .eq('id', rideId);
+
+    if (error) {
+      console.error('Error updating ride status:', error);
+      return;
+    }
+
+    // Optimistic update
     setRides(prev => prev.map(ride => 
-      ride.id === rideId ? { ...ride, status: newStatus } : ride
+      ride.id === rideId ? { ...ride, status: newStatus, ...updates } : ride
     ));
   };
 
@@ -189,7 +289,7 @@ export function DriverProvider({ children }: { children: ReactNode }) {
     };
     setMessages(prev => [...prev, newMessage]);
 
-    // Simulate passenger response after 2-4 seconds
+    // Simulate passenger response
     const responses = [
       "Ok, entendi!",
       "Perfeito, obrigado!",
@@ -247,6 +347,9 @@ export function DriverProvider({ children }: { children: ReactNode }) {
       onlineStartTime,
       todayOnlineSeconds,
       toggleOnline,
+      isLoading,
+      refreshRides,
+      addRide,
     }}>
       {children}
     </DriverContext.Provider>

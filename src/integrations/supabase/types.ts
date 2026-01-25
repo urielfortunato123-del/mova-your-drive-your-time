@@ -267,6 +267,71 @@ export type Database = {
         }
         Relationships: []
       }
+      rides: {
+        Row: {
+          cancel_reason: string | null
+          completed_at: string | null
+          created_at: string
+          driver_id: string
+          dropoff_address: string
+          estimated_value: number
+          id: string
+          passenger_name: string
+          passenger_phone: string | null
+          pickup_address: string
+          pickup_time: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          waiting_time: number | null
+          waiting_value: number | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          driver_id: string
+          dropoff_address: string
+          estimated_value?: number
+          id?: string
+          passenger_name: string
+          passenger_phone?: string | null
+          pickup_address: string
+          pickup_time: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          waiting_time?: number | null
+          waiting_value?: number | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          completed_at?: string | null
+          created_at?: string
+          driver_id?: string
+          dropoff_address?: string
+          estimated_value?: number
+          id?: string
+          passenger_name?: string
+          passenger_phone?: string | null
+          pickup_address?: string
+          pickup_time?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          waiting_time?: number | null
+          waiting_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rides_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
