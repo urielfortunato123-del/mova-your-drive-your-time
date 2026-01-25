@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -16,22 +16,30 @@ import {
   Car,
   Fuel,
   Wrench,
-  Shield,
   ChevronDown,
   ChevronUp,
-  History
+  History,
+  BarChart3
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts';
 
 interface PremiumHistoryRecord {
   id: string;
@@ -75,6 +83,40 @@ export default function PremiumBonusHistory() {
   ) || 0;
 
   const monthsWithBonus = history?.filter(h => h.metas_atingidas).length || 0;
+
+  // Prepare chart data - reverse to show oldest first
+  const chartData = useMemo(() => {
+    if (!history || history.length === 0) return [];
+    
+    return [...history]
+      .reverse()
+      .map((h) => {
+        const totalBonus = (h.bonus_recebido || 0) + (h.bonus_telefonia || 0);
+        let shortMonth = h.month_year;
+        try {
+          const date = parse(h.month_year, 'yyyy-MM', new Date());
+          shortMonth = format(date, "MMM", { locale: ptBR });
+        } catch {}
+        
+        return {
+          month: shortMonth,
+          fullMonth: h.month_year,
+          bonus: h.metas_atingidas ? totalBonus : 0,
+          achieved: h.metas_atingidas,
+        };
+      });
+  }, [history]);
+
+  // Calculate trend
+  const trend = useMemo(() => {
+    if (chartData.length < 2) return null;
+    const lastTwo = chartData.slice(-2);
+    const diff = lastTwo[1].bonus - lastTwo[0].bonus;
+    const percentage = lastTwo[0].bonus > 0 
+      ? ((diff / lastTwo[0].bonus) * 100).toFixed(0) 
+      : '0';
+    return { diff, percentage, isPositive: diff >= 0 };
+  }, [chartData]);
 
   const formatMonthYear = (monthYear: string) => {
     try {
@@ -152,6 +194,121 @@ export default function PremiumBonusHistory() {
             <p className="text-xs text-muted-foreground">Total de meses</p>
           </Card>
         </div>
+
+        {/* Evolution Chart */}
+        {chartData.length > 0 && (
+          <Card className="p-4 animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Evolução dos Bônus</h3>
+              </div>
+              {trend && (
+                <div className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                  trend.isPositive 
+                    ? "bg-success/10 text-success" 
+                    : "bg-destructive/10 text-destructive"
+                )}>
+                  <TrendingUp className={cn(
+                    "w-3 h-3",
+                    !trend.isPositive && "rotate-180"
+                  )} />
+                  {trend.isPositive ? '+' : ''}{trend.percentage}%
+                </div>
+              )}
+            </div>
+            
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="bonusGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke="hsl(var(--border))" 
+                    vertical={false}
+                  />
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tickFormatter={(value) => `R$${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number, name: string) => [
+                      `R$ ${value.toFixed(2).replace('.', ',')}`, 
+                      'Bônus'
+                    ]}
+                    labelFormatter={(label) => `Mês: ${label}`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="bonus"
+                    stroke="hsl(var(--success))"
+                    strokeWidth={2}
+                    fill="url(#bonusGradient)"
+                    dot={{ 
+                      r: 4, 
+                      fill: 'hsl(var(--success))', 
+                      strokeWidth: 2,
+                      stroke: 'hsl(var(--card))'
+                    }}
+                    activeDot={{ 
+                      r: 6, 
+                      fill: 'hsl(var(--success))',
+                      strokeWidth: 2,
+                      stroke: 'hsl(var(--card))'
+                    }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {chartData.length >= 2 && (
+              <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Média</p>
+                  <p className="font-semibold text-foreground">
+                    R$ {(totalBonusReceived / monthsWithBonus || 0).toFixed(0)}
+                  </p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Maior bônus</p>
+                  <p className="font-semibold text-success">
+                    R$ {Math.max(...chartData.map(d => d.bonus)).toFixed(0)}
+                  </p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">Taxa sucesso</p>
+                  <p className="font-semibold text-primary">
+                    {history && history.length > 0 
+                      ? Math.round((monthsWithBonus / history.length) * 100) 
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* History List */}
         <div>
