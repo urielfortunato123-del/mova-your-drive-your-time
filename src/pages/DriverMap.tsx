@@ -60,6 +60,13 @@ interface FuelPrices {
   gnv?: number;
 }
 
+interface RegionalAverages {
+  gasolina: number;
+  etanol: number;
+  diesel: number;
+  gnv: number;
+}
+
 interface PointOfInterest {
   id: string;
   name: string;
@@ -72,6 +79,8 @@ interface PointOfInterest {
   fuelPrices?: FuelPrices;
   brand?: string;
   updatedAt?: string;
+  priceSource?: string;
+  state?: string;
 }
 
 interface FuelStation {
@@ -82,10 +91,12 @@ interface FuelStation {
   lng: number;
   address: string;
   city: string;
+  state: string;
   open24h: boolean;
   prices: FuelPrices;
   distance: string;
   updatedAt: string;
+  priceSource: string;
 }
 
 // Calculate distance between two coordinates (Haversine formula)
@@ -932,8 +943,10 @@ export default function DriverMap() {
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [favorites, setFavorites] = useState<string[]>(getFavorites);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [fuelDataSource, setFuelDataSource] = useState<"api" | "database" | "mock">("database");
+  const [fuelDataSource, setFuelDataSource] = useState<"anp" | "database" | "mock">("mock");
   const [loadingFuel, setLoadingFuel] = useState(false);
+  const [regionalAverages, setRegionalAverages] = useState<RegionalAverages | null>(null);
+  const [currentState, setCurrentState] = useState<string>("");
 
   // Fetch gas stations from database (premium_partners)
   const fetchGasStationsFromDB = async (userLat: number, userLng: number): Promise<PointOfInterest[]> => {
@@ -1014,7 +1027,7 @@ export default function DriverMap() {
     setLoadingFuel(true);
     try {
       const { data, error } = await supabase.functions.invoke('fuel-prices', {
-        body: { lat, lng, radiusKm: 5 }
+        body: { lat, lng, radiusKm: 10 }
       });
       
       if (error) throw error;
@@ -1031,13 +1044,23 @@ export default function DriverMap() {
         fuelPrices: station.prices,
         brand: station.brand,
         updatedAt: station.updatedAt,
+        priceSource: station.priceSource,
+        state: station.state,
       }));
       
-      setFuelDataSource(data.source);
+      // Set regional data
+      if (data.regionalAverages) {
+        setRegionalAverages(data.regionalAverages);
+      }
+      if (data.state) {
+        setCurrentState(data.state);
+      }
+      
+      setFuelDataSource("anp");
       return fuelStations;
     } catch (error) {
       console.error("Error fetching fuel prices:", error);
-      toast.error("Erro ao buscar preços. Usando dados locais.");
+      toast.error("Erro ao buscar preços ANP. Usando dados locais.");
       return [];
     } finally {
       setLoadingFuel(false);
@@ -1052,26 +1075,23 @@ export default function DriverMap() {
           const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
           setPosition(coords);
           
-          // Fetch gas stations from database
+          // Prioritize ANP API for fuel prices
           setLoadingFuel(true);
+          const apiStations = await fetchFuelPrices(coords[0], coords[1]);
+          
+          // Also fetch from database as supplement
           const dbStations = await fetchGasStationsFromDB(coords[0], coords[1]);
           
-          if (dbStations.length > 0) {
-            setFuelDataSource("database");
-          } else {
-            // Fallback to edge function if no DB data
-            const apiStations = await fetchFuelPrices(coords[0], coords[1]);
-            if (apiStations.length > 0) {
-              dbStations.push(...apiStations);
-            }
-          }
+          // Combine: API stations first, then DB stations
+          const allStations = [...apiStations, ...dbStations];
           setLoadingFuel(false);
           
-          // Get all Brazil POIs
-          const allBrazilPois = getAllBrazilPOIs(coords[0], coords[1]);
+          // Get all Brazil POIs (non-gas)
+          const allBrazilPois = getAllBrazilPOIs(coords[0], coords[1])
+            .filter(poi => poi.type !== "gas"); // Avoid duplicates
           
-          // Combine database stations with Brazil POIs
-          setPois([...dbStations, ...allBrazilPois]);
+          // Combine all data
+          setPois([...allStations, ...allBrazilPois]);
           setLoading(false);
         },
         async (error) => {
@@ -1080,18 +1100,15 @@ export default function DriverMap() {
           setPosition(defaultCoords);
           
           setLoadingFuel(true);
+          const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
           const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
-          if (dbStations.length === 0) {
-            const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
-            dbStations.push(...apiStations);
-          } else {
-            setFuelDataSource("database");
-          }
           setLoadingFuel(false);
           
-          const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1]);
-          setPois([...dbStations, ...allBrazilPois]);
+          const allStations = [...apiStations, ...dbStations];
+          const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1])
+            .filter(poi => poi.type !== "gas");
           
+          setPois([...allStations, ...allBrazilPois]);
           setLoading(false);
           toast.error("Não foi possível obter sua localização. Usando localização padrão.");
         },
@@ -1102,18 +1119,15 @@ export default function DriverMap() {
       setPosition(defaultCoords);
       
       setLoadingFuel(true);
+      const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
       const dbStations = await fetchGasStationsFromDB(defaultCoords[0], defaultCoords[1]);
-      if (dbStations.length === 0) {
-        const apiStations = await fetchFuelPrices(defaultCoords[0], defaultCoords[1]);
-        dbStations.push(...apiStations);
-      } else {
-        setFuelDataSource("database");
-      }
       setLoadingFuel(false);
       
-      const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1]);
-      setPois([...dbStations, ...allBrazilPois]);
+      const allStations = [...apiStations, ...dbStations];
+      const allBrazilPois = getAllBrazilPOIs(defaultCoords[0], defaultCoords[1])
+        .filter(poi => poi.type !== "gas");
       
+      setPois([...allStations, ...allBrazilPois]);
       setLoading(false);
     }
   };
@@ -1158,32 +1172,72 @@ export default function DriverMap() {
     <PageContainer title="Mapa">
       <div className="space-y-4 pb-4">
         {/* Data source indicator */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {fuelDataSource === "database" ? (
-              <Badge variant="outline" className="text-xs gap-1 text-green-600 border-green-300">
-                <Wifi className="w-3 h-3" />
-                Parceiros MOVA
-              </Badge>
-            ) : fuelDataSource === "api" ? (
-              <Badge variant="outline" className="text-xs gap-1 text-blue-600 border-blue-300">
-                <Wifi className="w-3 h-3" />
-                API Real
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
-                <WifiOff className="w-3 h-3" />
-                Dados Simulados
-              </Badge>
-            )}
-            {gasStationsCount > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {gasStationsCount} postos encontrados
-              </span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {fuelDataSource === "anp" ? (
+                <Badge variant="outline" className="text-xs gap-1 text-green-600 border-green-300">
+                  <Wifi className="w-3 h-3" />
+                  Preços ANP
+                </Badge>
+              ) : fuelDataSource === "database" ? (
+                <Badge variant="outline" className="text-xs gap-1 text-blue-600 border-blue-300">
+                  <Wifi className="w-3 h-3" />
+                  Parceiros MOVA
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-300">
+                  <WifiOff className="w-3 h-3" />
+                  Dados Locais
+                </Badge>
+              )}
+              {currentState && (
+                <Badge variant="secondary" className="text-xs">
+                  {currentState}
+                </Badge>
+              )}
+              {gasStationsCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {gasStationsCount} postos
+                </span>
+              )}
+            </div>
+            {loadingFuel && (
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
             )}
           </div>
-          {loadingFuel && (
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          
+          {/* Regional averages card */}
+          {regionalAverages && fuelDataSource === "anp" && (
+            <Card className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Fuel className="w-4 h-4 text-green-600" />
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                  Média Regional ANP - {currentState}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Gasolina</p>
+                  <p className="text-sm font-bold text-green-600">R$ {regionalAverages.gasolina.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Etanol</p>
+                  <p className="text-sm font-bold text-blue-600">R$ {regionalAverages.etanol.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Diesel</p>
+                  <p className="text-sm font-bold text-amber-600">R$ {regionalAverages.diesel.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">GNV</p>
+                  <p className="text-sm font-bold text-purple-600">R$ {regionalAverages.gnv.toFixed(2)}</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                Fonte: ANP - Atualização semanal
+              </p>
+            </Card>
           )}
         </div>
 
