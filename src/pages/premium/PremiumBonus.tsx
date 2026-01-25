@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Shield,
   CreditCard,
-  ExternalLink
+  ExternalLink,
+  History
 } from 'lucide-react';
 import { usePremium, PREMIUM_GOALS, PREMIUM_BONUS_RANGE, TELEFONIA_BONUS, OPERADORAS_ELEGIVEIS } from '@/hooks/usePremium';
 import { format } from 'date-fns';
@@ -266,6 +267,16 @@ export default function PremiumBonus() {
             </p>
           </div>
         </Card>
+
+        {/* History Button */}
+        <Button 
+          variant="outline"
+          onClick={() => navigate('/premium/bonus/history')}
+          className="w-full gap-2"
+        >
+          <History className="w-4 h-4" />
+          Ver Histórico de Bônus
+        </Button>
 
         {/* Action Button */}
         {!bonusEligible && (
