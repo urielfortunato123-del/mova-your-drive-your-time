@@ -18,10 +18,12 @@ import {
   Heart,
   Wifi,
   WifiOff,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFuelPrices, PointOfInterest, RegionalAverages } from "@/hooks/useFuelPrices";
+import { MapAIDrawer } from "@/components/map/MapAIDrawer";
 
 // Fix Leaflet default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -387,6 +389,9 @@ export default function DriverMap() {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
+          
+          {/* AI Assistant Button */}
+          <MapAIDrawer position={position} pois={pois} />
         </div>
 
         {/* Map */}
