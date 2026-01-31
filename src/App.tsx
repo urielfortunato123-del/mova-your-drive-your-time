@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DriverProvider } from "@/contexts/DriverContext";
 import { InstallBanner } from "@/components/InstallBanner";
+import { AIAssistantDrawer } from "@/components/ai/AIAssistantDrawer";
 
 // Pages
 import Login from "./pages/Login";
@@ -154,6 +155,7 @@ const App = () => (
           <DriverProvider>
             <AppRoutes />
             <InstallBanner delay={2000} />
+            <AIAssistantDrawer />
           </DriverProvider>
         </AuthProvider>
       </BrowserRouter>
