@@ -40,7 +40,7 @@ export default function Install() {
           <div className="w-24 h-24 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg">
             <span className="text-3xl font-bold text-primary-foreground">M</span>
           </div>
-          <h2 className="text-2xl font-bold">MOVA Motorista</h2>
+          <h2 className="text-2xl font-bold">MOVA</h2>
           <p className="text-muted-foreground text-center mt-1">
             Mobilidade que respeita seu tempo
           </p>

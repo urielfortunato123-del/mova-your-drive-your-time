@@ -1,31 +1,26 @@
 {
-  "name": "MOVA - Motorista",
+  "name": "MOVA - Usuário",
   "short_name": "MOVA",
-  "description": "Mobilidade que respeita seu tempo.",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a",
-  "display": "standalone",
-  "scope": "/",
+  "description": "Mobilidade que respeita seu tempo - Transporte executivo agendado",
   "start_url": "/",
+  "display": "standalone",
   "orientation": "portrait",
+  "background_color": "#0F1218",
+  "theme_color": "#0F1218",
+  "scope": "/",
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["transportation", "travel"]
 }
