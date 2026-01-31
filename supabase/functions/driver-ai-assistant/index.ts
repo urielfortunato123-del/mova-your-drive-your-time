@@ -56,9 +56,9 @@ serve(async (req) => {
   try {
     const { messages, rideData, type } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY is not configured");
     }
 
     // Build context with ride data if available
@@ -97,14 +97,16 @@ ${Object.entries(data.rides_by_day || {}).map(([day, info]) =>
 
     const systemContent = SYSTEM_PROMPT + contextMessage + typeInstruction;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://lovable.dev",
+        "X-Title": "MovA Driver App",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.0-flash-001",
         messages: [
           { role: "system", content: systemContent },
           ...messages,
@@ -121,13 +123,13 @@ ${Object.entries(data.rides_by_day || {}).map(([day, info]) =>
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Limite de uso atingido. Entre em contato com o suporte." }), {
+        return new Response(JSON.stringify({ error: "Limite de uso atingido. Verifique seus créditos no OpenRouter." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("OpenRouter error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "Erro ao processar sua mensagem" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
