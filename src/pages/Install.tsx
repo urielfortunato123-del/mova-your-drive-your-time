@@ -13,7 +13,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
+import movaCar from '@/assets/mova-car.png';
 export default function Install() {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [installing, setInstalling] = useState(false);
@@ -37,8 +37,8 @@ export default function Install() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-24 h-24 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg">
-            <span className="text-3xl font-bold text-primary-foreground">M</span>
+          <div className="w-24 h-24 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg overflow-hidden">
+            <img src={movaCar} alt="MOVA" className="w-20 h-20 object-contain" />
           </div>
           <h2 className="text-2xl font-bold">MOVA</h2>
           <p className="text-muted-foreground text-center mt-1">
