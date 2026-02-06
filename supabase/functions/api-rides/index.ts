@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       }
 
       const body = await req.json();
-      const { origin, destination, scheduled_for } = body;
+      const { origin, destination, scheduled_for, payment_method, payment_status } = body;
 
       // Validate input
       if (!origin?.lat || !origin?.lng || !origin?.address) {
@@ -112,6 +112,20 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Validate payment method
+      const validPaymentMethods = ['credit_card', 'debit_card', 'cash', 'pix'];
+      const selectedPayment = payment_method || 'cash';
+      if (!validPaymentMethods.includes(selectedPayment)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid payment method' }),
+          { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // PIX requires payment before requesting
+      const paymentIsPaid = selectedPayment === 'pix' || (selectedPayment === 'credit_card' && payment_status === 'paid');
+      const finalPaymentStatus = paymentIsPaid ? 'paid' : 'pending';
+
       // Create ride with MATCHING status
       const { data: ride, error: rideError } = await supabase
         .from('rides_v2')
@@ -125,6 +139,9 @@ Deno.serve(async (req) => {
           dest_lng: destination.lng,
           dest_address: destination.address,
           scheduled_for: scheduled_for || null,
+          payment_method: selectedPayment,
+          payment_status: finalPaymentStatus,
+          paid_at: paymentIsPaid ? new Date().toISOString() : null,
         })
         .select()
         .single();

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, DollarSign, User, Navigation, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Clock, DollarSign, User, Navigation, Loader2, Wifi, WifiOff, CreditCard, Banknote, QrCode } from 'lucide-react';
 import { useRideOffers } from '@/hooks/useRideOffers';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -160,6 +160,12 @@ function RideOfferCard({ offer, onAccept, isAccepting, timeRemaining }: RideOffe
           </div>
         </div>
 
+        {/* Payment Method */}
+        <PaymentMethodBadge 
+          method={ride.payment_method} 
+          status={ride.payment_status} 
+        />
+
         {/* Price */}
         {ride.price_cents > 0 && (
           <div className="flex items-center gap-2 pt-2 border-t">
@@ -190,5 +196,60 @@ function RideOfferCard({ offer, onAccept, isAccepting, timeRemaining }: RideOffe
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+// Componente de badge de pagamento
+function PaymentMethodBadge({ method, status }: { method?: string; status?: string }) {
+  const getPaymentInfo = () => {
+    switch (method) {
+      case 'credit_card':
+        return {
+          icon: CreditCard,
+          label: 'Crédito',
+          color: status === 'paid' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-blue-100 text-blue-700 border-blue-300',
+          sublabel: status === 'paid' ? 'Pago antecipado' : 'Paga no carro',
+        };
+      case 'debit_card':
+        return {
+          icon: CreditCard,
+          label: 'Débito',
+          color: 'bg-purple-100 text-purple-700 border-purple-300',
+          sublabel: 'Paga no carro',
+        };
+      case 'pix':
+        return {
+          icon: QrCode,
+          label: 'PIX',
+          color: 'bg-green-100 text-green-700 border-green-300',
+          sublabel: 'Pago antecipado ✓',
+        };
+      case 'cash':
+      default:
+        return {
+          icon: Banknote,
+          label: 'Dinheiro',
+          color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+          sublabel: 'Paga no carro',
+        };
+    }
+  };
+
+  const info = getPaymentInfo();
+  const Icon = info.icon;
+
+  return (
+    <div className={`flex items-center gap-2 p-2 rounded-lg border ${info.color}`}>
+      <Icon className="w-5 h-5" />
+      <div className="flex-1">
+        <p className="font-medium text-sm">{info.label}</p>
+        <p className="text-xs opacity-80">{info.sublabel}</p>
+      </div>
+      {status === 'paid' && (
+        <Badge variant="outline" className="bg-green-500 text-white border-green-500 text-xs">
+          PAGO
+        </Badge>
+      )}
+    </div>
   );
 }
