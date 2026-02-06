@@ -43,6 +43,11 @@ export function BottomNav() {
     setTimeout(() => setTappedItem(null), 400);
   };
 
+  // Find active route
+  const activeRoute = navItems.find(
+    item => location.pathname === item.to || location.pathname.startsWith(item.to + "/")
+  )?.to;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
       {/* Glass Navigation background - iOS 26 style */}
@@ -65,28 +70,9 @@ export function BottomNav() {
             >
               {/* Tap scale container - iOS whileTap effect */}
               <motion.div
-                className="flex flex-col items-center gap-1 relative"
+                className="flex flex-col items-center gap-1 relative z-10"
                 whileTap={{ scale: 0.85 }}
               >
-                {/* Background pill with shared layout - iOS 26 style */}
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      className="absolute inset-0 -top-1 -bottom-1 rounded-2xl -z-10"
-                      style={{
-                        background: "linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.08))",
-                        boxShadow: "0 0 20px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--primary) / 0.2)",
-                        border: "1px solid hsl(var(--primary) / 0.3)",
-                      }}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={pillSpring}
-                    />
-                  )}
-                </AnimatePresence>
-
                 {/* Icon with iOS bounce animation */}
                 <motion.div
                   className={cn(
@@ -136,6 +122,20 @@ export function BottomNav() {
                   )}
                 </AnimatePresence>
               </motion.div>
+
+              {/* Background pill with layoutId for smooth sliding */}
+              {isActive && (
+                <motion.div
+                  layoutId="nav-pill"
+                  className="absolute inset-x-1 top-1 bottom-1 rounded-2xl -z-0"
+                  style={{
+                    background: "linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.08))",
+                    boxShadow: "0 0 20px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--primary) / 0.2)",
+                    border: "1px solid hsl(var(--primary) / 0.3)",
+                  }}
+                  transition={pillSpring}
+                />
+              )}
             </NavLink>
           );
         })}
