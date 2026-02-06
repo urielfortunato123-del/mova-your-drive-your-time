@@ -64,58 +64,68 @@ export function DailyGoal({ current, goal, className }: DailyGoalProps) {
   }, [percentage, current, goal, permission, notifyGoalReached, sendNotification]);
 
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            {isCompleted ? (
-              <CheckCircle2 className="w-5 h-5 text-available" />
-            ) : (
-              <Target className="w-5 h-5 text-primary" />
-            )}
-            <span className="font-medium text-foreground">Meta do Dia</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm">
-            <TrendingUp className={cn(
-              "w-4 h-4",
-              isCompleted ? "text-available" : "text-muted-foreground"
-            )} />
-            <span className={cn(
-              "font-semibold",
-              isCompleted ? "text-available" : "text-foreground"
+    <Card className={cn("card-modern overflow-hidden", className)}>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+              isCompleted 
+                ? "bg-primary/20 text-primary" 
+                : "bg-secondary text-muted-foreground"
             )}>
+              {isCompleted ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : (
+                <Target className="w-5 h-5" />
+              )}
+            </div>
+            <span className="font-display font-semibold text-foreground">Meta do Dia</span>
+          </div>
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+            isCompleted ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
+          )}>
+            <TrendingUp className="w-4 h-4" />
+            <span className="font-bold text-sm">
               {percentage.toFixed(0)}%
             </span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Progress 
-            value={percentage} 
-            className={cn(
-              "h-3",
-              isCompleted && "[&>div]:bg-available"
+        <div className="space-y-3">
+          <div className="relative">
+            <Progress 
+              value={percentage} 
+              className={cn(
+                "h-3 bg-secondary/80",
+                isCompleted && "[&>div]:bg-primary"
+              )}
+            />
+            {/* Glow effect when completed */}
+            {isCompleted && (
+              <div className="absolute inset-0 h-3 rounded-full glow-success opacity-50" />
             )}
-          />
+          </div>
           
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              R$ {current.toFixed(0)} / R$ {goal.toFixed(0)}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">R$ {current.toFixed(0)}</span> / R$ {goal.toFixed(0)}
             </span>
             {!isCompleted && (
-              <span className="text-primary font-medium">
+              <span className="text-primary font-semibold text-sm">
                 Faltam R$ {remaining.toFixed(0)}
               </span>
             )}
             {isCompleted && (
-              <span className="text-available font-medium">
+              <span className="text-primary font-semibold text-sm flex items-center gap-1">
                 Meta atingida! 🎉
               </span>
             )}
           </div>
           
           {/* Connection to monthly bonus */}
-          <p className="text-xs text-muted-foreground text-center mt-3 pt-3 border-t border-border/50">
+          <p className="text-xs text-muted-foreground text-center mt-4 pt-4 border-t border-border/50">
             📌 Essa meta te aproxima do bônus mensal.
           </p>
         </div>

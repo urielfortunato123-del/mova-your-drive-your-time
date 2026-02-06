@@ -6,23 +6,23 @@
 
 @layer base {
   :root {
-    /* MOVA Design System - Professional Driver App */
+    /* MOVA Design System - Modern Dark/Green Theme */
     
-    /* Background & Surfaces */
-    --background: 220 20% 97%;
-    --foreground: 220 30% 12%;
+    /* Light Mode */
+    --background: 220 20% 96%;
+    --foreground: 220 30% 15%;
     
     --card: 0 0% 100%;
-    --card-foreground: 220 30% 12%;
+    --card-foreground: 220 30% 15%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 12%;
+    --popover-foreground: 220 30% 15%;
     
-    /* Primary - Deep Navy Blue (Trust & Professionalism) */
-    --primary: 220 60% 20%;
-    --primary-foreground: 0 0% 98%;
+    /* Primary - Emerald Green */
+    --primary: 155 80% 45%;
+    --primary-foreground: 220 30% 8%;
     
-    /* Secondary - Soft Slate */
+    /* Secondary */
     --secondary: 220 15% 92%;
     --secondary-foreground: 220 30% 20%;
     
@@ -30,21 +30,21 @@
     --muted: 220 15% 94%;
     --muted-foreground: 220 10% 45%;
     
-    /* Accent - Emerald Green (Earnings & Active) */
-    --accent: 160 60% 40%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Same as primary for consistency */
+    --accent: 155 80% 45%;
+    --accent-foreground: 220 30% 8%;
     
     /* Status Colors */
-    --available: 160 60% 45%;
-    --available-foreground: 0 0% 100%;
+    --available: 155 80% 45%;
+    --available-foreground: 220 30% 8%;
     --paused: 45 90% 50%;
     --paused-foreground: 45 90% 15%;
     --unavailable: 0 65% 55%;
     --unavailable-foreground: 0 0% 100%;
     
-    /* Success - For earnings and confirmations */
-    --success: 160 60% 40%;
-    --success-foreground: 0 0% 100%;
+    /* Success */
+    --success: 155 80% 45%;
+    --success-foreground: 220 30% 8%;
     
     /* Warning */
     --warning: 45 90% 50%;
@@ -55,63 +55,80 @@
     
     --border: 220 15% 88%;
     --input: 220 15% 88%;
-    --ring: 220 60% 20%;
+    --ring: 155 80% 45%;
     
-    --radius: 0.75rem;
+    --radius: 1rem;
     
-    /* Sidebar */
-    --sidebar-background: 220 30% 12%;
-    --sidebar-foreground: 220 10% 90%;
-    --sidebar-primary: 160 60% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 18%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 220 25% 20%;
-    --sidebar-ring: 160 60% 45%;
-    
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 60% 20%), hsl(220 50% 30%));
-    --gradient-success: linear-gradient(135deg, hsl(160 60% 40%), hsl(160 50% 50%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    /* Sidebar - Light */
+    --sidebar-background: 220 20% 97%;
+    --sidebar-foreground: 220 30% 15%;
+    --sidebar-primary: 155 80% 45%;
+    --sidebar-primary-foreground: 220 30% 8%;
+    --sidebar-accent: 220 15% 92%;
+    --sidebar-accent-foreground: 220 30% 20%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 155 80% 45%;
   }
 
   .dark {
-    --background: 220 30% 8%;
-    --foreground: 220 10% 95%;
+    /* Dark Mode - Inspired by Animax UI */
+    --background: 220 25% 7%;
+    --foreground: 155 10% 95%;
     
-    --card: 220 25% 12%;
-    --card-foreground: 220 10% 95%;
+    --card: 220 25% 10%;
+    --card-foreground: 155 10% 95%;
     
-    --popover: 220 25% 12%;
-    --popover-foreground: 220 10% 95%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 155 10% 95%;
     
-    --primary: 160 60% 45%;
-    --primary-foreground: 220 30% 8%;
+    /* Primary - Vibrant Emerald Green */
+    --primary: 155 80% 50%;
+    --primary-foreground: 220 30% 5%;
     
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 220 10% 90%;
+    /* Secondary */
+    --secondary: 220 25% 15%;
+    --secondary-foreground: 155 10% 90%;
     
-    --muted: 220 25% 18%;
+    /* Muted */
+    --muted: 220 25% 15%;
     --muted-foreground: 220 10% 55%;
     
-    --accent: 160 60% 45%;
-    --accent-foreground: 220 30% 8%;
+    /* Accent */
+    --accent: 155 80% 50%;
+    --accent-foreground: 220 30% 5%;
     
-    --destructive: 0 65% 50%;
+    /* Status Colors - Bright for dark mode */
+    --available: 155 80% 50%;
+    --available-foreground: 220 30% 5%;
+    --paused: 45 90% 55%;
+    --paused-foreground: 45 90% 10%;
+    --unavailable: 0 70% 55%;
+    --unavailable-foreground: 0 0% 100%;
+    
+    /* Success */
+    --success: 155 80% 50%;
+    --success-foreground: 220 30% 5%;
+    
+    /* Warning */
+    --warning: 45 90% 55%;
+    --warning-foreground: 45 90% 10%;
+    
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 160 60% 45%;
+    --border: 220 25% 18%;
+    --input: 220 25% 18%;
+    --ring: 155 80% 50%;
     
-    --sidebar-background: 220 30% 6%;
-    --sidebar-foreground: 220 10% 90%;
-    --sidebar-primary: 160 60% 45%;
-    --sidebar-primary-foreground: 220 30% 8%;
+    /* Sidebar - Dark */
+    --sidebar-background: 220 30% 5%;
+    --sidebar-foreground: 155 10% 90%;
+    --sidebar-primary: 155 80% 50%;
+    --sidebar-primary-foreground: 220 30% 5%;
     --sidebar-accent: 220 25% 12%;
-    --sidebar-accent-foreground: 220 10% 90%;
+    --sidebar-accent-foreground: 155 10% 90%;
     --sidebar-border: 220 25% 15%;
-    --sidebar-ring: 160 60% 45%;
+    --sidebar-ring: 155 80% 50%;
   }
 }
 
@@ -144,32 +161,44 @@
     @apply bg-unavailable text-unavailable-foreground;
   }
   
-  /* Card Styles */
-  .card-ride {
-    @apply bg-card rounded-xl border border-border p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/20;
+  /* Modern Card Styles */
+  .card-modern {
+    @apply bg-card rounded-2xl border border-border/50 p-5 shadow-sm transition-all duration-300;
   }
   
-  .card-stat {
-    @apply bg-card rounded-xl border border-border p-5 shadow-sm;
+  .card-modern:hover {
+    @apply shadow-lg border-primary/20;
   }
   
-  /* Earnings highlight */
-  .earnings-highlight {
-    @apply bg-gradient-to-br from-success/10 to-success/5 border-success/20;
+  .card-glass {
+    @apply bg-card/80 backdrop-blur-xl rounded-2xl border border-border/30 p-5;
   }
   
-  /* Timer styles */
-  .timer-active {
-    @apply animate-pulse-slow;
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(155 80% 50% / 0.3), 0 0 40px hsl(155 80% 50% / 0.1);
+  }
+  
+  .glow-success {
+    box-shadow: 0 0 20px hsl(155 80% 50% / 0.4);
   }
   
   /* Bottom navigation */
   .nav-item {
-    @apply flex flex-col items-center gap-1 py-2 px-3 text-muted-foreground transition-colors;
+    @apply flex flex-col items-center gap-1 py-2 px-3 text-muted-foreground transition-all duration-200;
   }
   
   .nav-item-active {
     @apply text-primary font-medium;
+  }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, hsl(155 80% 45%) 0%, hsl(155 70% 35%) 100%);
+  }
+  
+  .bg-gradient-dark {
+    background: linear-gradient(180deg, hsl(220 25% 10%) 0%, hsl(220 30% 5%) 100%);
   }
 }
 
@@ -180,17 +209,21 @@
   }
   
   .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.4s ease-out;
   }
   
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
   }
   
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
@@ -207,9 +240,24 @@
     }
   }
   
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
   /* Glass effect */
   .glass {
-    @apply bg-white/80 backdrop-blur-lg;
+    @apply bg-card/80 backdrop-blur-xl;
+  }
+  
+  .glass-dark {
+    @apply bg-background/90 backdrop-blur-xl;
   }
   
   /* Safe area for mobile */
@@ -235,5 +283,13 @@
   
   .leaflet-marker-icon .animate-pulse-dot {
     animation: pulse 2s ease-in-out infinite;
+  }
+  
+  /* Text gradient */
+  .text-gradient-primary {
+    background: linear-gradient(135deg, hsl(155 80% 50%) 0%, hsl(155 60% 60%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

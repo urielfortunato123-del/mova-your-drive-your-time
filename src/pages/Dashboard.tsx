@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   return (
     <PageContainer title="MOVA">
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Welcome Section */}
         <div className="animate-fade-in">
           <p className="text-muted-foreground text-sm">Olá,</p>
@@ -53,28 +53,28 @@ export default function Dashboard() {
 
         {/* Online Toggle Section */}
         <div className={cn(
-          "rounded-2xl p-4 transition-all duration-300 animate-fade-in",
-          isOnline 
-            ? "bg-available/10 border-2 border-available" 
-            : "bg-muted border-2 border-border"
+          "card-modern animate-fade-in overflow-hidden",
+          isOnline && "border-primary/40 glow-primary"
         )}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
-                isOnline ? "bg-available text-available-foreground" : "bg-muted-foreground/20 text-muted-foreground"
+                "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300",
+                isOnline 
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+                  : "bg-secondary text-muted-foreground"
               )}>
-                <Timer className="w-6 h-6" />
+                <Timer className="w-7 h-7" />
               </div>
               <div>
                 <p className={cn(
-                  "font-semibold text-lg",
-                  isOnline ? "text-available" : "text-muted-foreground"
+                  "font-display font-bold text-lg",
+                  isOnline ? "text-primary" : "text-muted-foreground"
                 )}>
                   {isOnline ? "Online" : "Offline"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Tempo hoje: <span className="font-mono font-medium">{formatOnlineTime(todayOnlineSeconds)}</span>
+                  Hoje: <span className="font-mono font-semibold text-foreground">{formatOnlineTime(todayOnlineSeconds)}</span>
                 </p>
               </div>
             </div>
@@ -82,10 +82,10 @@ export default function Dashboard() {
               onClick={toggleOnline}
               size="lg"
               className={cn(
-                "gap-2 min-w-[120px] transition-all",
+                "gap-2 min-w-[110px] h-12 font-semibold transition-all",
                 isOnline 
-                  ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" 
-                  : "bg-available hover:bg-available/90 text-available-foreground"
+                  ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25" 
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
               )}
             >
               <Power className="w-5 h-5" />
@@ -98,7 +98,9 @@ export default function Dashboard() {
         {isOnline && (
           <div className="animate-slide-up">
             <div className="flex items-center gap-2 mb-3">
-              <Navigation className="w-5 h-5 text-primary" />
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Navigation className="w-4 h-4 text-primary" />
+              </div>
               <h3 className="font-semibold text-foreground">Corridas Disponíveis</h3>
             </div>
             <RideOffersPanel />
@@ -136,50 +138,51 @@ export default function Dashboard() {
           goal={DAILY_GOAL} 
           className="animate-slide-up"
         />
+
         {/* Premium Banner */}
         <Link to={isPremium ? "/premium/goals" : "/premium"} className="block animate-slide-up">
           <div className={cn(
-            "rounded-2xl p-4 hover:shadow-lg transition-shadow",
+            "card-modern border-0 overflow-hidden",
             isPremium 
-              ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
+              ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-white"
               : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
           )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-                  <Crown className="w-5 h-5" />
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                  <Crown className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-semibold flex items-center gap-1">
+                  <p className="font-display font-bold text-lg flex items-center gap-1">
                     MOVA Premium
-                    {isPremium && <Star className="w-3 h-3 fill-current" />}
+                    {isPremium && <Star className="w-4 h-4 fill-current" />}
                   </p>
-                  <p className="text-xs opacity-90">
+                  <p className="text-sm opacity-90">
                     {isPremium ? "Ver suas metas" : "Bônus de até R$ 700/mês"}
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5 opacity-80" />
             </div>
           </div>
         </Link>
 
         {/* Bradesco Banner */}
         <Link to="/bradesco" className="block animate-slide-up">
-          <div className="bg-gradient-to-r from-[#CC092F] to-[#8B0620] rounded-2xl p-4 text-white hover:shadow-lg transition-shadow">
+          <div className="card-modern border-0 bg-gradient-to-r from-[#CC092F] to-[#8B0620] text-white overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0">
-                  <span className="text-[#CC092F] font-bold text-lg">B</span>
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-[#CC092F] font-bold text-xl">B</span>
                 </div>
                 <div>
-                  <p className="font-semibold">MOVA + Bradesco</p>
-                  <p className="text-xs text-white/80 flex items-center gap-1">
-                    <CreditCard className="w-3 h-3" /> R$ 1 gasto = 0,5 KM
+                  <p className="font-display font-bold text-lg">MOVA + Bradesco</p>
+                  <p className="text-sm text-white/80 flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5" /> R$ 1 gasto = 0,5 KM
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5 opacity-80" />
             </div>
           </div>
         </Link>
@@ -187,7 +190,7 @@ export default function Dashboard() {
         {/* Main Action Button */}
         <Button
           onClick={() => navigate('/rides')}
-          className="w-full h-14 text-base font-medium gap-2"
+          className="w-full h-14 text-base font-semibold gap-2"
           size="lg"
         >
           <Calendar className="w-5 h-5" />
@@ -199,7 +202,7 @@ export default function Dashboard() {
           <div className="animate-slide-up">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-foreground">Próxima Corrida</h3>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground font-mono">
                 {format(new Date(nextRide.pickupTime), "HH:mm")}
               </span>
             </div>
@@ -212,11 +215,11 @@ export default function Dashboard() {
 
         {/* Empty State */}
         {!nextRide && dailyStats.scheduledRides === 0 && (
-          <div className="text-center py-8 animate-fade-in">
-            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
-              <MapPin className="w-8 h-8 text-muted-foreground" />
+          <div className="text-center py-10 animate-fade-in">
+            <div className="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <MapPin className="w-10 h-10 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-foreground font-medium">
               Nenhuma corrida agendada para hoje
             </p>
             <p className="text-sm text-muted-foreground mt-1">
