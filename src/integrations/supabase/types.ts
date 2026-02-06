@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          name: string
+          scope: string | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name: string
+          scope?: string | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name?: string
+          scope?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -545,7 +605,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_ride_participant: { Args: { ride_uuid: string }; Returns: boolean }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
