@@ -19,11 +19,11 @@ export function PageContainer({
   noPadding = false
 }: PageContainerProps) {
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <Header title={title} showStatus={showStatus} />
       <main className={cn(
         "max-w-lg mx-auto",
-        !noPadding && "px-4 py-4",
+        !noPadding && "px-4 py-5",
         className
       )}>
         {children}

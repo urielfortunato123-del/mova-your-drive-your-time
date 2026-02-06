@@ -8,20 +8,24 @@ interface StatCardProps {
   icon?: LucideIcon;
   highlight?: boolean;
   subtext?: string;
+  className?: string;
 }
 
-export function StatCard({ label, value, icon: Icon, highlight, subtext }: StatCardProps) {
+export function StatCard({ label, value, icon: Icon, highlight, subtext, className }: StatCardProps) {
   return (
     <div className={cn(
-      "card-stat",
-      highlight && "earnings-highlight"
+      "card-modern group",
+      highlight && "border-primary/30 bg-primary/5",
+      className
     )}>
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">{label}</p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+            {label}
+          </p>
           <p className={cn(
-            "text-2xl font-bold font-display",
-            highlight ? "text-success" : "text-foreground"
+            "text-2xl font-display font-bold",
+            highlight ? "text-primary" : "text-foreground"
           )}>
             {value}
           </p>
@@ -31,13 +35,12 @@ export function StatCard({ label, value, icon: Icon, highlight, subtext }: StatC
         </div>
         {Icon && (
           <div className={cn(
-            "p-2 rounded-lg",
-            highlight ? "bg-success/10" : "bg-primary/10"
+            "p-2.5 rounded-xl transition-all duration-300",
+            highlight 
+              ? "bg-primary/20 text-primary group-hover:bg-primary group-hover:text-primary-foreground" 
+              : "bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
           )}>
-            <Icon className={cn(
-              "w-5 h-5",
-              highlight ? "text-success" : "text-primary"
-            )} />
+            <Icon className="w-5 h-5" />
           </div>
         )}
       </div>
