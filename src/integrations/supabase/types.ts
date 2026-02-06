@@ -110,6 +110,50 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_profiles_v2: {
+        Row: {
+          created_at: string
+          is_online: boolean
+          last_lat: number | null
+          last_lng: number | null
+          last_seen: string | null
+          user_id: string
+          vehicle_model: string | null
+          vehicle_plate: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          created_at?: string
+          is_online?: boolean
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen?: string | null
+          user_id: string
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          created_at?: string
+          is_online?: boolean
+          last_lat?: number | null
+          last_lng?: number | null
+          last_seen?: string | null
+          user_id?: string
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_v2_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       premium_history: {
         Row: {
           beneficio_telefonia: boolean | null
@@ -267,6 +311,80 @@ export type Database = {
         }
         Relationships: []
       }
+      ride_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+          ride_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          ride_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          ride_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides_v2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_offers: {
+        Row: {
+          created_at: string
+          driver_id: string
+          expires_at: string
+          id: string
+          ride_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          expires_at: string
+          id?: string
+          ride_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          expires_at?: string
+          id?: string
+          ride_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_offers_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_offers_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides_v2"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rides: {
         Row: {
           cancel_reason: string | null
@@ -332,12 +450,102 @@ export type Database = {
           },
         ]
       }
+      rides_v2: {
+        Row: {
+          created_at: string
+          dest_address: string
+          dest_lat: number
+          dest_lng: number
+          driver_id: string | null
+          id: string
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          passenger_id: string
+          price_cents: number | null
+          scheduled_for: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dest_address: string
+          dest_lat: number
+          dest_lng: number
+          driver_id?: string | null
+          id?: string
+          origin_address: string
+          origin_lat: number
+          origin_lng: number
+          passenger_id: string
+          price_cents?: number | null
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dest_address?: string
+          dest_lat?: number
+          dest_lng?: number
+          driver_id?: string | null
+          id?: string
+          origin_address?: string
+          origin_lat?: number
+          origin_lng?: number
+          passenger_id?: string
+          price_cents?: number | null
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rides_v2_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_v2_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
+            referencedRelation: "users_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users_profile: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id: string
+          phone?: string | null
+          role: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_ride_participant: { Args: { ride_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
