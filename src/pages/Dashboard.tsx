@@ -18,6 +18,28 @@ import { cn } from "@/lib/utils";
 // Daily goal (can be made configurable later)
 const DAILY_GOAL = 300;
 
+// iOS 26 style spring configurations
+const springConfig = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 30,
+  mass: 1,
+};
+
+const bounceConfig = {
+  type: "spring" as const,
+  stiffness: 500,
+  damping: 20,
+  mass: 0.6,
+};
+
+const gentleSpring = {
+  type: "spring" as const,
+  stiffness: 200,
+  damping: 25,
+  mass: 0.8,
+};
+
 // Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,10 +57,7 @@ const fadeInUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut" as const,
-    },
+    transition: springConfig,
   },
 };
 
@@ -47,10 +66,7 @@ const scaleIn = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut" as const,
-    },
+    transition: springConfig,
   },
 };
 
@@ -70,10 +86,7 @@ const statCardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: 0.4,
-      ease: "easeOut" as const,
-    },
+    transition: springConfig,
   },
 };
 
@@ -84,8 +97,8 @@ const bannerVariants = {
     x: 0,
     scale: 1,
     transition: {
-      duration: 0.6,
-      ease: "easeOut" as const,
+      ...springConfig,
+      stiffness: 250,
     },
   },
 };
@@ -95,10 +108,7 @@ const buttonVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut" as const,
-    },
+    transition: springConfig,
   },
 };
 
@@ -180,20 +190,22 @@ export default function Dashboard() {
               </div>
             </div>
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.08, y: -2 }}
+              whileTap={{ scale: 0.92 }}
+              transition={bounceConfig}
             >
               <Button
                 onClick={toggleOnline}
                 size="lg"
-                className={cn(
-                  "gap-2 min-w-[110px] h-12 font-semibold transition-all",
-                  isOnline 
-                    ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25" 
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
-                )}
+                variant={isOnline ? "destructive" : "default"}
+                className="gap-2 min-w-[110px] h-12 font-semibold"
               >
-                <Power className="w-5 h-5" />
+                <motion.div
+                  animate={isOnline ? {} : { rotate: [0, -15, 15, 0] }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Power className="w-5 h-5" />
+                </motion.div>
                 {isOnline ? "Parar" : "Iniciar"}
               </Button>
             </motion.div>
@@ -273,18 +285,19 @@ export default function Dashboard() {
               className={cn(
                 "card-modern border-0 overflow-hidden",
                 isPremium 
-                  ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-white"
+                  ? "bg-gradient-to-r from-warning to-warning/80 text-warning-foreground"
                   : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
               )}
-              whileHover={{ scale: 1.02, x: 4 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.03, x: 6 }}
+              whileTap={{ scale: 0.97 }}
+              transition={bounceConfig}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <motion.div 
-                    className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0"
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-12 h-12 bg-foreground/10 rounded-xl flex items-center justify-center shrink-0"
+                    animate={{ rotate: [0, 8, -8, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                   >
                     <Crown className="w-6 h-6" />
                   </motion.div>
@@ -299,8 +312,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <motion.div
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <ArrowRight className="w-5 h-5 opacity-80" />
                 </motion.div>
@@ -313,29 +326,30 @@ export default function Dashboard() {
         <motion.div variants={bannerVariants}>
           <Link to="/bradesco" className="block">
             <motion.div 
-              className="card-modern border-0 bg-gradient-to-r from-[#CC092F] to-[#8B0620] text-white overflow-hidden"
-              whileHover={{ scale: 1.02, x: 4 }}
-              whileTap={{ scale: 0.98 }}
+              className="card-modern border-0 bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground overflow-hidden"
+              whileHover={{ scale: 1.03, x: 6 }}
+              whileTap={{ scale: 0.97 }}
+              transition={bounceConfig}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <motion.div 
-                    className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0"
-                    whileHover={{ rotate: 360 }}
-                    transition={{ duration: 0.6 }}
+                    className="w-12 h-12 bg-background rounded-xl flex items-center justify-center shrink-0"
+                    whileHover={{ rotate: 360, scale: 1.1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   >
-                    <span className="text-[#CC092F] font-bold text-xl">B</span>
+                    <span className="text-destructive font-bold text-xl">B</span>
                   </motion.div>
                   <div>
                     <p className="font-display font-bold text-lg">MOVA + Bradesco</p>
-                    <p className="text-sm text-white/80 flex items-center gap-1">
+                    <p className="text-sm opacity-80 flex items-center gap-1">
                       <CreditCard className="w-3.5 h-3.5" /> R$ 1 gasto = 0,5 KM
                     </p>
                   </div>
                 </div>
                 <motion.div
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
                 >
                   <ArrowRight className="w-5 h-5 opacity-80" />
                 </motion.div>
@@ -347,15 +361,21 @@ export default function Dashboard() {
         {/* Main Action Button */}
         <motion.div variants={buttonVariants}>
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.03, y: -3 }}
+            whileTap={{ scale: 0.96 }}
+            transition={bounceConfig}
           >
             <Button
               onClick={() => navigate('/rides')}
               className="w-full h-14 text-base font-semibold gap-2"
               size="lg"
             >
-              <Calendar className="w-5 h-5" />
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Calendar className="w-5 h-5" />
+              </motion.div>
               Ver Corridas Agendadas
             </Button>
           </motion.div>
@@ -366,7 +386,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={springConfig}
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-foreground">Próxima Corrida</h3>
@@ -375,8 +395,9 @@ export default function Dashboard() {
               </span>
             </div>
             <motion.div 
-              whileHover={{ scale: 1.01, y: -2 }}
-              whileTap={{ scale: 0.99 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              transition={bounceConfig}
             >
               <RideCard 
                 ride={nextRide} 
