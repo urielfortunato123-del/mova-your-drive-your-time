@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Calendar, Map, DollarSign, Crown } from "lucide-react";
@@ -12,46 +12,74 @@ const navItems = [
   { to: "/premium", icon: Crown, label: "Premium" },
 ];
 
-// iOS 26 style spring configuration
+// iOS 26 style spring configuration - smoother and more fluid
 const springConfig = {
   type: "spring" as const,
-  stiffness: 400,
-  damping: 25,
-  mass: 0.8,
+  stiffness: 300,
+  damping: 30,
+  mass: 1,
 };
 
 const bounceConfig = {
   type: "spring" as const,
   stiffness: 500,
-  damping: 15,
-  mass: 0.5,
+  damping: 20,
+  mass: 0.6,
 };
 
 export function BottomNav() {
   const location = useLocation();
   const [pressedItem, setPressedItem] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 });
 
-  const activeIndex = navItems.findIndex(item => item.to === location.pathname);
+  // Find active index - also check if path starts with the route (for nested routes)
+  const activeIndex = navItems.findIndex(item => 
+    location.pathname === item.to || location.pathname.startsWith(item.to + "/")
+  );
+
+  // Calculate pill position based on actual DOM elements
+  useEffect(() => {
+    if (navRef.current && activeIndex >= 0) {
+      const navItems = navRef.current.querySelectorAll('a');
+      const activeItem = navItems[activeIndex] as HTMLElement;
+      if (activeItem) {
+        const navRect = navRef.current.getBoundingClientRect();
+        const itemRect = activeItem.getBoundingClientRect();
+        setPillStyle({
+          left: itemRect.left - navRect.left,
+          width: itemRect.width,
+        });
+      }
+    }
+  }, [activeIndex]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-border/50 safe-bottom z-50">
-      <div className="flex items-center justify-around px-2 max-w-lg mx-auto relative">
-        {/* Sliding background pill - iOS 26 style */}
-        <motion.div
-          className="absolute h-12 bg-primary/10 rounded-2xl -z-10"
-          initial={false}
-          animate={{
-            x: `calc(${activeIndex * 100}% + ${activeIndex * 8}px)`,
-            width: `calc(${100 / navItems.length}% - 8px)`,
-          }}
-          transition={springConfig}
-          style={{
-            left: 4,
-          }}
-        />
+    <nav className="fixed bottom-0 left-0 right-0 z-50">
+      {/* Glass background */}
+      <div className="absolute inset-0 bg-card/70 backdrop-blur-2xl border-t border-border/30" />
+      
+      <div ref={navRef} className="flex items-center justify-around px-1 max-w-lg mx-auto relative">
+        {/* Sliding background pill - iOS 26 glass style */}
+        {activeIndex >= 0 && (
+          <motion.div
+            className="absolute h-11 rounded-2xl -z-10"
+            style={{
+              background: "linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.08))",
+              boxShadow: "inset 0 1px 1px hsl(var(--primary) / 0.1), 0 0 20px hsl(var(--primary) / 0.1)",
+              border: "1px solid hsl(var(--primary) / 0.2)",
+            }}
+            initial={false}
+            animate={{
+              left: pillStyle.left,
+              width: pillStyle.width,
+            }}
+            transition={springConfig}
+          />
+        )}
 
         {navItems.map(({ to, icon: Icon, label }, index) => {
-          const isActive = location.pathname === to;
+          const isActive = location.pathname === to || location.pathname.startsWith(to + "/");
           const isPressed = pressedItem === to;
 
           return (
@@ -59,7 +87,7 @@ export function BottomNav() {
               key={to}
               to={to}
               className={cn(
-                "nav-item flex-1 relative py-3 select-none",
+                "nav-item flex-1 relative py-3 select-none touch-manipulation",
                 isActive && "nav-item-active"
               )}
               onMouseDown={() => setPressedItem(to)}
@@ -68,37 +96,21 @@ export function BottomNav() {
               onTouchStart={() => setPressedItem(to)}
               onTouchEnd={() => setPressedItem(null)}
             >
-              {/* Active top indicator with smooth animation */}
-              <AnimatePresence>
-                {isActive && (
-                  <motion.div
-                    className="absolute top-0 left-1/2 w-8 h-1 bg-primary rounded-b-full"
-                    initial={{ scaleX: 0, x: "-50%", opacity: 0 }}
-                    animate={{ scaleX: 1, x: "-50%", opacity: 1 }}
-                    exit={{ scaleX: 0, opacity: 0 }}
-                    transition={springConfig}
-                  />
-                )}
-              </AnimatePresence>
-
               {/* Icon container with iOS bounce effect */}
               <motion.div
-                className={cn(
-                  "p-2 rounded-xl transition-colors duration-200",
-                  isActive && "bg-transparent"
-                )}
+                className="flex flex-col items-center gap-0.5"
                 animate={{
-                  scale: isPressed ? 0.85 : isActive ? 1.1 : 1,
-                  y: isActive ? -2 : 0,
+                  scale: isPressed ? 0.85 : isActive ? 1.05 : 1,
+                  y: isActive ? -1 : 0,
                 }}
                 transition={isPressed ? bounceConfig : springConfig}
               >
                 <motion.div
                   animate={{
-                    rotate: isActive ? [0, -10, 10, -5, 5, 0] : 0,
+                    rotate: isActive ? [0, -8, 8, -4, 4, 0] : 0,
                   }}
                   transition={{
-                    duration: 0.5,
+                    duration: 0.4,
                     ease: "easeOut",
                     times: [0, 0.2, 0.4, 0.6, 0.8, 1],
                   }}
@@ -108,23 +120,21 @@ export function BottomNav() {
                     isActive ? "text-primary" : "text-muted-foreground"
                   )} />
                 </motion.div>
-              </motion.div>
 
-              {/* Label with fade animation */}
-              <motion.span
-                className={cn(
-                  "text-[10px] mt-1 block",
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
-                )}
-                animate={{
-                  opacity: isActive ? 1 : 0.7,
-                  y: isActive ? 0 : 2,
-                  scale: isActive ? 1.05 : 1,
-                }}
-                transition={springConfig}
-              >
-                {label}
-              </motion.span>
+                {/* Label with fade animation */}
+                <motion.span
+                  className={cn(
+                    "text-[10px]",
+                    isActive ? "text-primary font-medium" : "text-muted-foreground"
+                  )}
+                  animate={{
+                    opacity: isActive ? 1 : 0.6,
+                  }}
+                  transition={springConfig}
+                >
+                  {label}
+                </motion.span>
+              </motion.div>
 
               {/* Ripple effect on tap */}
               <AnimatePresence>
@@ -134,13 +144,13 @@ export function BottomNav() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
+                    transition={{ duration: 0.1 }}
                   >
                     <motion.div
-                      className="w-12 h-12 rounded-full bg-primary/20"
-                      initial={{ scale: 0 }}
+                      className="w-10 h-10 rounded-full bg-primary/15"
+                      initial={{ scale: 0.5, opacity: 0.5 }}
                       animate={{ scale: 1.5, opacity: 0 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
                     />
                   </motion.div>
                 )}
@@ -149,6 +159,9 @@ export function BottomNav() {
           );
         })}
       </div>
+      
+      {/* Safe area padding */}
+      <div className="safe-bottom" />
     </nav>
   );
 }
