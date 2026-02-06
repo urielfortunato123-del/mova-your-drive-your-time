@@ -24,3 +24,9 @@ verify_jwt = false
 
 [functions.api-ride-detail]
 verify_jwt = false
+
+[functions.api-admin-metrics]
+verify_jwt = false
+
+[functions.api-admin-rides]
+verify_jwt = false
