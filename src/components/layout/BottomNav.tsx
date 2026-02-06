@@ -3,6 +3,14 @@ import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, Calendar, Map, DollarSign, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+  springSnappy, 
+  springBounce, 
+  navItemVariants, 
+  navIndicatorDot, 
+  rippleVariants,
+  triggerHaptic 
+} from "@/lib/animations";
 
 const navItems = [
   { to: "/dashboard", icon: Home, label: "Início" },
@@ -11,21 +19,6 @@ const navItems = [
   { to: "/earnings", icon: DollarSign, label: "Ganhos" },
   { to: "/premium", icon: Crown, label: "Premium" },
 ];
-
-// iOS 26 style spring configuration - smoother and more fluid
-const springConfig = {
-  type: "spring" as const,
-  stiffness: 300,
-  damping: 30,
-  mass: 1,
-};
-
-const bounceConfig = {
-  type: "spring" as const,
-  stiffness: 500,
-  damping: 20,
-  mass: 0.6,
-};
 
 export function BottomNav() {
   const location = useLocation();
@@ -56,19 +49,11 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
-      {/* Glass background - matching reference style */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: "linear-gradient(180deg, hsl(var(--card) / 0.95) 0%, hsl(var(--card)) 100%)",
-          backdropFilter: "blur(40px) saturate(180%)",
-          WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          borderTop: "1px solid hsl(var(--border) / 0.5)",
-        }}
-      />
+      {/* Glass Navigation background - iOS 26 style */}
+      <div className="absolute inset-0 glass-nav" />
       
       <div ref={navRef} className="flex items-center justify-around px-2 py-1 max-w-lg mx-auto relative">
-        {/* Sliding background pill - matching reference with green glow */}
+        {/* Sliding background pill with glow */}
         {activeIndex >= 0 && (
           <motion.div
             className="absolute h-14 rounded-2xl -z-10"
@@ -82,7 +67,7 @@ export function BottomNav() {
               left: pillStyle.left,
               width: pillStyle.width,
             }}
-            transition={springConfig}
+            transition={springSnappy}
           />
         )}
 
@@ -111,7 +96,7 @@ export function BottomNav() {
                   scale: isPressed ? 0.85 : isActive ? 1.08 : 1,
                   y: isActive ? -2 : 0,
                 }}
-                transition={isPressed ? bounceConfig : springConfig}
+                transition={isPressed ? springBounce : springSnappy}
               >
                 <motion.div
                   className={cn(
@@ -144,7 +129,7 @@ export function BottomNav() {
                   animate={{
                     opacity: isActive ? 1 : 0.7,
                   }}
-                  transition={springConfig}
+                  transition={springSnappy}
                 >
                   {label}
                 </motion.span>
@@ -154,10 +139,7 @@ export function BottomNav() {
                   {isActive && (
                     <motion.div
                       className="w-1 h-1 rounded-full bg-primary"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={bounceConfig}
+                      {...navIndicatorDot}
                     />
                   )}
                 </AnimatePresence>
@@ -175,9 +157,9 @@ export function BottomNav() {
                   >
                     <motion.div
                       className="w-10 h-10 rounded-full bg-primary/15"
-                      initial={{ scale: 0.5, opacity: 0.5 }}
-                      animate={{ scale: 1.5, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      initial={rippleVariants.initial}
+                      animate={rippleVariants.animate}
+                      transition={rippleVariants.transition}
                     />
                   </motion.div>
                 )}
