@@ -4,13 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Eye, EyeOff, User, Download } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User, Download, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { InstallBanner } from "@/components/InstallBanner";
 import { toast } from "sonner";
 import movaCar from "@/assets/mova-car.png";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: "E-mail inválido" }),
@@ -30,6 +31,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { login, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { isInstalled } = usePWAInstall();
@@ -45,7 +47,25 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const emailValidation = z.string().trim().email({ message: "E-mail inválido" }).safeParse(email);
+        if (!emailValidation.success) {
+          toast.error(emailValidation.error.errors[0].message);
+          setIsLoading(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: `${window.location.origin}/`,
+        });
+
+        if (error) {
+          toast.error("Erro ao enviar e-mail de recuperação");
+        } else {
+          toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+          setIsForgotPassword(false);
+        }
+      } else if (isSignUp) {
         const validation = signUpSchema.safeParse({ name, email, password });
         if (!validation.success) {
           toast.error(validation.error.errors[0].message);
@@ -115,15 +135,29 @@ export default function Login() {
 
       {/* Form Section */}
       <div className="bg-card rounded-t-3xl px-6 py-8 animate-slide-up relative z-10">
+        {isForgotPassword && (
+          <button
+            type="button"
+            onClick={() => setIsForgotPassword(false)}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm">Voltar</span>
+          </button>
+        )}
         <p className="text-primary text-center animate-fade-in text-xl font-semibold mb-2">
-          Motorista
+          {isForgotPassword ? "Recuperar Senha" : "Motorista"}
         </p>
         <p className="text-center text-muted-foreground text-sm mb-6">
-          {isSignUp ? "Crie sua conta e comece a dirigir." : "Mobilidade que respeita seu tempo."}
+          {isForgotPassword 
+            ? "Digite seu e-mail para receber o link de recuperação." 
+            : isSignUp 
+              ? "Crie sua conta e comece a dirigir." 
+              : "Mobilidade que respeita seu tempo."}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {isSignUp && (
+          {isSignUp && !isForgotPassword && (
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">
                 Nome completo
@@ -161,55 +195,66 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">
-              Senha
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 h-12 bg-secondary border-0"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+          {!isForgotPassword && (
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Senha
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-12 bg-secondary border-0"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <Button
             type="submit"
             className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
             disabled={isLoading}
           >
-            {isLoading ? (isSignUp ? "Criando conta..." : "Entrando...") : (isSignUp ? "Criar conta" : "Entrar")}
+            {isLoading 
+              ? (isForgotPassword ? "Enviando..." : isSignUp ? "Criando conta..." : "Entrando...") 
+              : (isForgotPassword ? "Enviar link de recuperação" : isSignUp ? "Criar conta" : "Entrar")}
           </Button>
         </form>
 
-        <button 
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full text-center text-sm text-primary hover:text-primary/80 mt-4 py-2 transition-colors font-medium"
-        >
-          {isSignUp ? "Já tenho uma conta" : "Criar nova conta"}
-        </button>
+        {!isForgotPassword && (
+          <button 
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full text-center text-sm text-primary hover:text-primary/80 mt-4 py-2 transition-colors font-medium"
+          >
+            {isSignUp ? "Já tenho uma conta" : "Criar nova conta"}
+          </button>
+        )}
 
-        {!isSignUp && (
-          <button className="w-full text-center text-sm text-muted-foreground hover:text-primary mt-2 py-2 transition-colors">
+        {!isSignUp && !isForgotPassword && (
+          <button 
+            onClick={() => setIsForgotPassword(true)}
+            className="w-full text-center text-sm text-muted-foreground hover:text-primary mt-2 py-2 transition-colors"
+          >
             Esqueci minha senha
           </button>
         )}
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Ao {isSignUp ? "criar sua conta" : "entrar"}, você concorda com nossos Termos de Uso e Política de Privacidade.
+          {isForgotPassword 
+            ? "Você receberá um e-mail com instruções para redefinir sua senha."
+            : `Ao ${isSignUp ? "criar sua conta" : "entrar"}, você concorda com nossos Termos de Uso e Política de Privacidade.`}
         </p>
       </div>
 
