@@ -521,7 +521,10 @@ export type Database = {
           origin_address: string
           origin_lat: number
           origin_lng: number
+          paid_at: string | null
           passenger_id: string
+          payment_method: string | null
+          payment_status: string | null
           price_cents: number | null
           scheduled_for: string | null
           status: string
@@ -537,7 +540,10 @@ export type Database = {
           origin_address: string
           origin_lat: number
           origin_lng: number
+          paid_at?: string | null
           passenger_id: string
+          payment_method?: string | null
+          payment_status?: string | null
           price_cents?: number | null
           scheduled_for?: string | null
           status?: string
@@ -553,7 +559,10 @@ export type Database = {
           origin_address?: string
           origin_lat?: number
           origin_lng?: number
+          paid_at?: string | null
           passenger_id?: string
+          payment_method?: string | null
+          payment_status?: string | null
           price_cents?: number | null
           scheduled_for?: string | null
           status?: string
