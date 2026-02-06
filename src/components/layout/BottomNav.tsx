@@ -56,18 +56,26 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
-      {/* Glass background */}
-      <div className="absolute inset-0 bg-card/70 backdrop-blur-2xl border-t border-border/30" />
+      {/* Glass background - matching reference style */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(180deg, hsl(var(--card) / 0.95) 0%, hsl(var(--card)) 100%)",
+          backdropFilter: "blur(40px) saturate(180%)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          borderTop: "1px solid hsl(var(--border) / 0.5)",
+        }}
+      />
       
-      <div ref={navRef} className="flex items-center justify-around px-1 max-w-lg mx-auto relative">
-        {/* Sliding background pill - iOS 26 glass style */}
+      <div ref={navRef} className="flex items-center justify-around px-2 py-1 max-w-lg mx-auto relative">
+        {/* Sliding background pill - matching reference with green glow */}
         {activeIndex >= 0 && (
           <motion.div
-            className="absolute h-11 rounded-2xl -z-10"
+            className="absolute h-14 rounded-2xl -z-10"
             style={{
-              background: "linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.08))",
-              boxShadow: "inset 0 1px 1px hsl(var(--primary) / 0.1), 0 0 20px hsl(var(--primary) / 0.1)",
-              border: "1px solid hsl(var(--primary) / 0.2)",
+              background: "linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.06))",
+              boxShadow: "0 0 25px hsl(var(--primary) / 0.2), inset 0 1px 0 hsl(var(--primary) / 0.15)",
+              border: "1px solid hsl(var(--primary) / 0.25)",
             }}
             initial={false}
             animate={{
@@ -87,8 +95,8 @@ export function BottomNav() {
               key={to}
               to={to}
               className={cn(
-                "nav-item flex-1 relative py-3 select-none touch-manipulation",
-                isActive && "nav-item-active"
+                "flex-1 relative py-3 select-none touch-manipulation",
+                "flex flex-col items-center gap-1"
               )}
               onMouseDown={() => setPressedItem(to)}
               onMouseUp={() => setPressedItem(null)}
@@ -98,16 +106,22 @@ export function BottomNav() {
             >
               {/* Icon container with iOS bounce effect */}
               <motion.div
-                className="flex flex-col items-center gap-0.5"
+                className="flex flex-col items-center gap-1"
                 animate={{
-                  scale: isPressed ? 0.85 : isActive ? 1.05 : 1,
-                  y: isActive ? -1 : 0,
+                  scale: isPressed ? 0.85 : isActive ? 1.08 : 1,
+                  y: isActive ? -2 : 0,
                 }}
                 transition={isPressed ? bounceConfig : springConfig}
               >
                 <motion.div
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300",
+                    isActive 
+                      ? "bg-primary/20 border border-primary/30" 
+                      : "bg-transparent"
+                  )}
                   animate={{
-                    rotate: isActive ? [0, -8, 8, -4, 4, 0] : 0,
+                    rotate: isActive ? [0, -6, 6, -3, 3, 0] : 0,
                   }}
                   transition={{
                     duration: 0.4,
@@ -121,19 +135,32 @@ export function BottomNav() {
                   )} />
                 </motion.div>
 
-                {/* Label with fade animation */}
+                {/* Label */}
                 <motion.span
                   className={cn(
-                    "text-[10px]",
-                    isActive ? "text-primary font-medium" : "text-muted-foreground"
+                    "text-[10px] font-medium",
+                    isActive ? "text-primary" : "text-muted-foreground"
                   )}
                   animate={{
-                    opacity: isActive ? 1 : 0.6,
+                    opacity: isActive ? 1 : 0.7,
                   }}
                   transition={springConfig}
                 >
                   {label}
                 </motion.span>
+
+                {/* Active indicator dot */}
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.div
+                      className="w-1 h-1 rounded-full bg-primary"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={bounceConfig}
+                    />
+                  )}
+                </AnimatePresence>
               </motion.div>
 
               {/* Ripple effect on tap */}

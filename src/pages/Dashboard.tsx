@@ -151,14 +151,19 @@ export default function Dashboard() {
           </h2>
         </motion.div>
 
-        {/* Online Toggle Section */}
+        {/* Online Toggle Section - Premium glass card style */}
         <motion.div
           variants={scaleIn}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           className={cn(
-            "card-modern overflow-hidden",
-            isOnline && "border-primary/40 glow-primary"
+            "relative overflow-hidden rounded-2xl p-5 transition-all duration-300",
+            "bg-gradient-to-br from-card/80 to-card/60",
+            "backdrop-blur-[20px]",
+            "border",
+            isOnline 
+              ? "border-primary/40 shadow-[0_0_30px_hsl(var(--primary)/0.2)]" 
+              : "border-border/40"
           )}
         >
           <div className="flex items-center justify-between">
@@ -167,11 +172,15 @@ export default function Dashboard() {
                 className={cn(
                   "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300",
                   isOnline 
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
-                    : "bg-secondary text-muted-foreground"
+                    ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground" 
+                    : "bg-secondary/80 text-muted-foreground border border-border/30"
                 )}
                 animate={isOnline ? { 
-                  boxShadow: ["0 0 20px rgba(16, 185, 129, 0.3)", "0 0 30px rgba(16, 185, 129, 0.5)", "0 0 20px rgba(16, 185, 129, 0.3)"]
+                  boxShadow: [
+                    "0 0 20px hsl(var(--primary) / 0.3)", 
+                    "0 0 35px hsl(var(--primary) / 0.5)", 
+                    "0 0 20px hsl(var(--primary) / 0.3)"
+                  ]
                 } : {}}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
@@ -278,105 +287,137 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* Premium Banner */}
+        {/* Premium Banner - Glass style matching reference */}
         <motion.div variants={bannerVariants}>
           <Link to={isPremium ? "/premium/goals" : "/premium"} className="block">
             <motion.div 
               className={cn(
-                "card-modern border-0 overflow-hidden",
-                isPremium 
-                  ? "bg-gradient-to-r from-warning to-warning/80 text-warning-foreground"
-                  : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
+                "relative overflow-hidden rounded-2xl p-4",
+                "bg-gradient-to-br from-card/80 to-card/60",
+                "backdrop-blur-[20px]",
+                "border border-primary/30",
+                "shadow-[0_0_25px_hsl(var(--primary)/0.15)]"
               )}
-              whileHover={{ scale: 1.03, x: 6 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
               transition={bounceConfig}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <motion.div 
-                    className="w-12 h-12 bg-foreground/10 rounded-xl flex items-center justify-center shrink-0"
-                    animate={{ rotate: [0, 8, -8, 0] }}
+                    className="w-12 h-12 bg-gradient-to-br from-warning to-warning/70 rounded-xl flex items-center justify-center shrink-0"
+                    animate={{ rotate: [0, 5, -5, 0] }}
                     transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <Crown className="w-6 h-6" />
+                    <Crown className="w-6 h-6 text-warning-foreground" />
                   </motion.div>
                   <div>
-                    <p className="font-display font-bold text-lg flex items-center gap-1">
-                      MOVA Premium
-                      {isPremium && <Star className="w-4 h-4 fill-current" />}
-                    </p>
-                    <p className="text-sm opacity-90">
-                      {isPremium ? "Ver suas metas" : "Bônus de até R$ 700/mês"}
+                    <div className="flex items-center gap-2">
+                      <span className="text-primary text-sm">✨</span>
+                      <p className="font-display font-bold text-foreground flex items-center gap-1">
+                        MOVA+
+                        {isPremium && <Star className="w-3.5 h-3.5 text-primary fill-current" />}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isPremium ? "Ver suas metas • Nível Bronze" : "Nível Bronze • +5% cashback"}
                     </p>
                   </div>
                 </div>
                 <motion.div
-                  animate={{ x: [0, 6, 0] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center"
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  <ArrowRight className="w-5 h-5 opacity-80" />
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 </motion.div>
               </div>
             </motion.div>
           </Link>
         </motion.div>
 
-        {/* Bradesco Banner */}
-        <motion.div variants={bannerVariants}>
-          <Link to="/bradesco" className="block">
-            <motion.div 
-              className="card-modern border-0 bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground overflow-hidden"
-              whileHover={{ scale: 1.03, x: 6 }}
-              whileTap={{ scale: 0.97 }}
+        {/* Benefícios Section - Matching reference style */}
+        <motion.div variants={fadeInUp} className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎁</span>
+            <h3 className="font-display font-semibold text-foreground">Benefícios Exclusivos</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {/* Parceiros */}
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              whileTap={{ scale: 0.95 }}
               transition={bounceConfig}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    className="w-12 h-12 bg-background rounded-xl flex items-center justify-center shrink-0"
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  >
-                    <span className="text-destructive font-bold text-xl">B</span>
-                  </motion.div>
-                  <div>
-                    <p className="font-display font-bold text-lg">MOVA + Bradesco</p>
-                    <p className="text-sm opacity-80 flex items-center gap-1">
-                      <CreditCard className="w-3.5 h-3.5" /> R$ 1 gasto = 0,5 KM
-                    </p>
+              <Link to="/premium/partners" className="block">
+                <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-primary/30 transition-all">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Parceiros</span>
                   </div>
                 </div>
-                <motion.div
-                  animate={{ x: [0, 6, 0] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-                >
-                  <ArrowRight className="w-5 h-5 opacity-80" />
-                </motion.div>
-              </div>
+              </Link>
             </motion.div>
-          </Link>
+            
+            {/* Telefonia */}
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              whileTap={{ scale: 0.95 }}
+              transition={bounceConfig}
+            >
+              <Link to="/premium/telefonia" className="block">
+                <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-primary/30 transition-all">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center">
+                      <span className="text-lg">📱</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Telefonia</span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+            
+            {/* Bradesco */}
+            <motion.div
+              whileHover={{ scale: 1.05, y: -4 }}
+              whileTap={{ scale: 0.95 }}
+              transition={bounceConfig}
+            >
+              <Link to="/bradesco" className="block">
+                <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-destructive/30 transition-all">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 border border-destructive/20 flex items-center justify-center">
+                      <span className="text-destructive font-bold text-lg">B</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">Bradesco</span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          </div>
         </motion.div>
 
-        {/* Main Action Button */}
+        {/* Main Action Button - Full width green style */}
         <motion.div variants={buttonVariants}>
           <motion.div
-            whileHover={{ scale: 1.03, y: -3 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
             transition={bounceConfig}
           >
             <Button
               onClick={() => navigate('/rides')}
-              className="w-full h-14 text-base font-semibold gap-2"
+              className="w-full h-14 text-base font-semibold gap-3 rounded-2xl"
               size="lg"
             >
               <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
+                animate={{ rotate: [0, -10, 10, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Calendar className="w-5 h-5" />
+                <span className="text-lg">⚡</span>
               </motion.div>
-              Ver Corridas Agendadas
+              Ver Corridas
             </Button>
           </motion.div>
         </motion.div>
