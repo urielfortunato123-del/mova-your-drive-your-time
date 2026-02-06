@@ -5,10 +5,11 @@ import { StatCard } from "@/components/ui/stat-card";
 import { RideCard } from "@/components/ui/ride-card";
 import { Button } from "@/components/ui/button";
 import { DailyGoal } from "@/components/dashboard/DailyGoal";
+import { RideOffersPanel } from "@/components/ride/RideOffersPanel";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremium } from "@/hooks/usePremium";
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard, Crown, Star } from "lucide-react";
+import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard, Crown, Star, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,17 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Ride Offers Section - Shows when online */}
+        {isOnline && (
+          <div className="animate-slide-up">
+            <div className="flex items-center gap-2 mb-3">
+              <Navigation className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Corridas Disponíveis</h3>
+            </div>
+            <RideOffersPanel />
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 animate-slide-up">
