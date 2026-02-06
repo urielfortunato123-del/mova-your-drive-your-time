@@ -10,66 +10,29 @@ import { RideOffersPanel } from "@/components/ride/RideOffersPanel";
 import { useDriver } from "@/contexts/DriverContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePremium } from "@/hooks/usePremium";
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, CreditCard, Crown, Star, Navigation } from "lucide-react";
+import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Power, Timer, ArrowRight, Crown, Star, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import {
+  springBounce,
+  springSmooth,
+  springSnappy,
+  containerVariants,
+  itemVariants,
+  fadeInUp,
+  scaleIn,
+  cardVariants,
+  buttonVariants as buttonMotionVariants,
+  glowPulse,
+  arrowBounce,
+  triggerHaptic,
+} from "@/lib/animations";
 
 // Daily goal (can be made configurable later)
 const DAILY_GOAL = 300;
 
-// iOS 26 style spring configurations
-const springConfig = {
-  type: "spring" as const,
-  stiffness: 300,
-  damping: 30,
-  mass: 1,
-};
-
-const bounceConfig = {
-  type: "spring" as const,
-  stiffness: 500,
-  damping: 20,
-  mass: 0.6,
-};
-
-const gentleSpring = {
-  type: "spring" as const,
-  stiffness: 200,
-  damping: 25,
-  mass: 0.8,
-};
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: springConfig,
-  },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: springConfig,
-  },
-};
-
+// Stagger variants for stats grid
 const statsGridVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -80,26 +43,13 @@ const statsGridVariants = {
   },
 };
 
-const statCardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: springConfig,
-  },
-};
-
 const bannerVariants = {
   hidden: { opacity: 0, x: -40, scale: 0.98 },
   visible: {
     opacity: 1,
     x: 0,
     scale: 1,
-    transition: {
-      ...springConfig,
-      stiffness: 250,
-    },
+    transition: springSmooth,
   },
 };
 
@@ -108,7 +58,7 @@ const buttonVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: springConfig,
+    transition: springSmooth,
   },
 };
 
@@ -201,10 +151,10 @@ export default function Dashboard() {
             <motion.div
               whileHover={{ scale: 1.08, y: -2 }}
               whileTap={{ scale: 0.92 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <Button
-                onClick={toggleOnline}
+                onClick={() => { triggerHaptic(); toggleOnline(); }}
                 size="lg"
                 variant={isOnline ? "destructive" : "default"}
                 className="gap-2 min-w-[110px] h-12 font-semibold"
@@ -248,21 +198,21 @@ export default function Dashboard() {
           className="grid grid-cols-2 gap-3"
           variants={statsGridVariants}
         >
-          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+          <motion.div variants={itemVariants} whileHover={cardVariants.hover} whileTap={cardVariants.tap}>
             <StatCard
               label="Corridas Hoje"
               value={dailyStats.scheduledRides}
               icon={Calendar}
             />
           </motion.div>
-          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+          <motion.div variants={itemVariants} whileHover={cardVariants.hover} whileTap={cardVariants.tap}>
             <StatCard
               label="Próxima às"
               value={formatNextTime()}
               icon={Clock}
             />
           </motion.div>
-          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+          <motion.div variants={itemVariants} whileHover={cardVariants.hover} whileTap={cardVariants.tap}>
             <StatCard
               label="Ganho Previsto"
               value={`R$ ${dailyStats.estimatedEarnings.toFixed(0)}`}
@@ -270,7 +220,7 @@ export default function Dashboard() {
               highlight
             />
           </motion.div>
-          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+          <motion.div variants={itemVariants} whileHover={cardVariants.hover} whileTap={cardVariants.tap}>
             <StatCard
               label="Concluídas"
               value={dailyStats.completedRides}
@@ -300,7 +250,7 @@ export default function Dashboard() {
               )}
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -347,7 +297,7 @@ export default function Dashboard() {
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <Link to="/premium/partners" className="block">
                 <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-primary/30 transition-all">
@@ -365,7 +315,7 @@ export default function Dashboard() {
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <Link to="/premium/telefonia" className="block">
                 <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-primary/30 transition-all">
@@ -383,7 +333,7 @@ export default function Dashboard() {
             <motion.div
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <Link to="/bradesco" className="block">
                 <div className="relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-[20px] border border-border/40 hover:border-destructive/30 transition-all">
@@ -404,7 +354,7 @@ export default function Dashboard() {
           <motion.div
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.97 }}
-            transition={bounceConfig}
+            transition={springBounce}
           >
             <Button
               onClick={() => navigate('/rides')}
@@ -427,7 +377,7 @@ export default function Dashboard() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={springConfig}
+            transition={springSmooth}
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-foreground">Próxima Corrida</h3>
@@ -438,7 +388,7 @@ export default function Dashboard() {
             <motion.div 
               whileHover={{ scale: 1.02, y: -4 }}
               whileTap={{ scale: 0.98 }}
-              transition={bounceConfig}
+              transition={springBounce}
             >
               <RideCard 
                 ride={nextRide} 
