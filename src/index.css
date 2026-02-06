@@ -71,43 +71,43 @@
   }
 
   .dark {
-    /* Dark Mode - Inspired by Animax UI */
-    --background: 220 25% 7%;
-    --foreground: 155 10% 95%;
+    /* Dark Mode - Premium Dark Style */
+    --background: 180 10% 6%;
+    --foreground: 0 0% 95%;
     
-    --card: 220 25% 10%;
-    --card-foreground: 155 10% 95%;
+    --card: 180 10% 9%;
+    --card-foreground: 0 0% 95%;
     
-    --popover: 220 25% 10%;
-    --popover-foreground: 155 10% 95%;
+    --popover: 180 10% 9%;
+    --popover-foreground: 0 0% 95%;
     
     /* Primary - Vibrant Emerald Green */
-    --primary: 155 80% 50%;
-    --primary-foreground: 220 30% 5%;
+    --primary: 155 75% 50%;
+    --primary-foreground: 180 10% 5%;
     
     /* Secondary */
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 155 10% 90%;
+    --secondary: 180 10% 14%;
+    --secondary-foreground: 0 0% 90%;
     
     /* Muted */
-    --muted: 220 25% 15%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 180 10% 14%;
+    --muted-foreground: 0 0% 50%;
     
     /* Accent */
-    --accent: 155 80% 50%;
-    --accent-foreground: 220 30% 5%;
+    --accent: 155 75% 50%;
+    --accent-foreground: 180 10% 5%;
     
     /* Status Colors - Bright for dark mode */
-    --available: 155 80% 50%;
-    --available-foreground: 220 30% 5%;
+    --available: 155 75% 50%;
+    --available-foreground: 180 10% 5%;
     --paused: 45 90% 55%;
     --paused-foreground: 45 90% 10%;
     --unavailable: 0 70% 55%;
     --unavailable-foreground: 0 0% 100%;
     
     /* Success */
-    --success: 155 80% 50%;
-    --success-foreground: 220 30% 5%;
+    --success: 155 75% 50%;
+    --success-foreground: 180 10% 5%;
     
     /* Warning */
     --warning: 45 90% 55%;
@@ -116,19 +116,19 @@
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 220 25% 18%;
-    --input: 220 25% 18%;
-    --ring: 155 80% 50%;
+    --border: 155 30% 18%;
+    --input: 180 10% 14%;
+    --ring: 155 75% 50%;
     
     /* Sidebar - Dark */
-    --sidebar-background: 220 30% 5%;
-    --sidebar-foreground: 155 10% 90%;
-    --sidebar-primary: 155 80% 50%;
-    --sidebar-primary-foreground: 220 30% 5%;
-    --sidebar-accent: 220 25% 12%;
-    --sidebar-accent-foreground: 155 10% 90%;
-    --sidebar-border: 220 25% 15%;
-    --sidebar-ring: 155 80% 50%;
+    --sidebar-background: 180 10% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 155 75% 50%;
+    --sidebar-primary-foreground: 180 10% 5%;
+    --sidebar-accent: 180 10% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 155 30% 15%;
+    --sidebar-ring: 155 75% 50%;
   }
 }
 
