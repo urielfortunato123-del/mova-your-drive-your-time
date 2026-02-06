@@ -1,1 +1,26 @@
 project_id = "phmgsnnwrnnutupjtpll"
+
+# Edge Functions JWT verification disabled - validated in code
+[functions.api-onboarding]
+verify_jwt = false
+
+[functions.api-driver-online]
+verify_jwt = false
+
+[functions.api-driver-location]
+verify_jwt = false
+
+[functions.api-rides]
+verify_jwt = false
+
+[functions.api-driver-offers]
+verify_jwt = false
+
+[functions.api-ride-accept]
+verify_jwt = false
+
+[functions.api-ride-status]
+verify_jwt = false
+
+[functions.api-ride-detail]
+verify_jwt = false
