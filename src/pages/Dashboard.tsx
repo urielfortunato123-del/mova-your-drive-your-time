@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { StatCard } from "@/components/ui/stat-card";
 import { RideCard } from "@/components/ui/ride-card";
@@ -16,6 +17,90 @@ import { cn } from "@/lib/utils";
 
 // Daily goal (can be made configurable later)
 const DAILY_GOAL = 300;
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut" as const,
+    },
+  },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut" as const,
+    },
+  },
+};
+
+const statsGridVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const statCardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut" as const,
+    },
+  },
+};
+
+const bannerVariants = {
+  hidden: { opacity: 0, x: -40, scale: 0.98 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut" as const,
+    },
+  },
+};
+
+const buttonVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut" as const,
+    },
+  },
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -42,30 +127,46 @@ export default function Dashboard() {
 
   return (
     <PageContainer title="MOVA">
-      <div className="space-y-5">
+      <motion.div 
+        className="space-y-5"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Welcome Section */}
-        <div className="animate-fade-in">
+        <motion.div variants={fadeInUp}>
           <p className="text-muted-foreground text-sm">Olá,</p>
           <h2 className="text-2xl font-display font-bold text-foreground">
             {driver?.name?.split(' ')[0] || 'Motorista'}
           </h2>
-        </div>
+        </motion.div>
 
         {/* Online Toggle Section */}
-        <div className={cn(
-          "card-modern animate-fade-in overflow-hidden",
-          isOnline && "border-primary/40 glow-primary"
-        )}>
+        <motion.div
+          variants={scaleIn}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          className={cn(
+            "card-modern overflow-hidden",
+            isOnline && "border-primary/40 glow-primary"
+          )}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300",
-                isOnline 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
-                  : "bg-secondary text-muted-foreground"
-              )}>
+              <motion.div 
+                className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300",
+                  isOnline 
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+                    : "bg-secondary text-muted-foreground"
+                )}
+                animate={isOnline ? { 
+                  boxShadow: ["0 0 20px rgba(16, 185, 129, 0.3)", "0 0 30px rgba(16, 185, 129, 0.5)", "0 0 20px rgba(16, 185, 129, 0.3)"]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
                 <Timer className="w-7 h-7" />
-              </div>
+              </motion.div>
               <div>
                 <p className={cn(
                   "font-display font-bold text-lg",
@@ -78,156 +179,237 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={toggleOnline}
-              size="lg"
-              className={cn(
-                "gap-2 min-w-[110px] h-12 font-semibold transition-all",
-                isOnline 
-                  ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25" 
-                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
-              )}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Power className="w-5 h-5" />
-              {isOnline ? "Parar" : "Iniciar"}
-            </Button>
+              <Button
+                onClick={toggleOnline}
+                size="lg"
+                className={cn(
+                  "gap-2 min-w-[110px] h-12 font-semibold transition-all",
+                  isOnline 
+                    ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25" 
+                    : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                )}
+              >
+                <Power className="w-5 h-5" />
+                {isOnline ? "Parar" : "Iniciar"}
+              </Button>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Ride Offers Section - Shows when online */}
         {isOnline && (
-          <div className="animate-slide-up">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
             <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-lg bg-primary/10">
+              <motion.div 
+                className="p-1.5 rounded-lg bg-primary/10"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 <Navigation className="w-4 h-4 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="font-semibold text-foreground">Corridas Disponíveis</h3>
             </div>
             <RideOffersPanel />
-          </div>
+          </motion.div>
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 animate-slide-up">
-          <StatCard
-            label="Corridas Hoje"
-            value={dailyStats.scheduledRides}
-            icon={Calendar}
-          />
-          <StatCard
-            label="Próxima às"
-            value={formatNextTime()}
-            icon={Clock}
-          />
-          <StatCard
-            label="Ganho Previsto"
-            value={`R$ ${dailyStats.estimatedEarnings.toFixed(0)}`}
-            icon={DollarSign}
-            highlight
-          />
-          <StatCard
-            label="Concluídas"
-            value={dailyStats.completedRides}
-            icon={TrendingUp}
-          />
-        </div>
+        <motion.div 
+          className="grid grid-cols-2 gap-3"
+          variants={statsGridVariants}
+        >
+          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+            <StatCard
+              label="Corridas Hoje"
+              value={dailyStats.scheduledRides}
+              icon={Calendar}
+            />
+          </motion.div>
+          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+            <StatCard
+              label="Próxima às"
+              value={formatNextTime()}
+              icon={Clock}
+            />
+          </motion.div>
+          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+            <StatCard
+              label="Ganho Previsto"
+              value={`R$ ${dailyStats.estimatedEarnings.toFixed(0)}`}
+              icon={DollarSign}
+              highlight
+            />
+          </motion.div>
+          <motion.div variants={statCardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+            <StatCard
+              label="Concluídas"
+              value={dailyStats.completedRides}
+              icon={TrendingUp}
+            />
+          </motion.div>
+        </motion.div>
 
         {/* Daily Goal */}
-        <DailyGoal 
-          current={earnings.today} 
-          goal={DAILY_GOAL} 
-          className="animate-slide-up"
-        />
+        <motion.div variants={fadeInUp}>
+          <DailyGoal 
+            current={earnings.today} 
+            goal={DAILY_GOAL} 
+          />
+        </motion.div>
 
         {/* Premium Banner */}
-        <Link to={isPremium ? "/premium/goals" : "/premium"} className="block animate-slide-up">
-          <div className={cn(
-            "card-modern border-0 overflow-hidden",
-            isPremium 
-              ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-white"
-              : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
-          )}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                  <Crown className="w-6 h-6" />
+        <motion.div variants={bannerVariants}>
+          <Link to={isPremium ? "/premium/goals" : "/premium"} className="block">
+            <motion.div 
+              className={cn(
+                "card-modern border-0 overflow-hidden",
+                isPremium 
+                  ? "bg-gradient-to-r from-yellow-500 to-amber-600 text-white"
+                  : "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
+              )}
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <motion.div 
+                    className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0"
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Crown className="w-6 h-6" />
+                  </motion.div>
+                  <div>
+                    <p className="font-display font-bold text-lg flex items-center gap-1">
+                      MOVA Premium
+                      {isPremium && <Star className="w-4 h-4 fill-current" />}
+                    </p>
+                    <p className="text-sm opacity-90">
+                      {isPremium ? "Ver suas metas" : "Bônus de até R$ 700/mês"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-display font-bold text-lg flex items-center gap-1">
-                    MOVA Premium
-                    {isPremium && <Star className="w-4 h-4 fill-current" />}
-                  </p>
-                  <p className="text-sm opacity-90">
-                    {isPremium ? "Ver suas metas" : "Bônus de até R$ 700/mês"}
-                  </p>
-                </div>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <ArrowRight className="w-5 h-5 opacity-80" />
+                </motion.div>
               </div>
-              <ArrowRight className="w-5 h-5 opacity-80" />
-            </div>
-          </div>
-        </Link>
+            </motion.div>
+          </Link>
+        </motion.div>
 
         {/* Bradesco Banner */}
-        <Link to="/bradesco" className="block animate-slide-up">
-          <div className="card-modern border-0 bg-gradient-to-r from-[#CC092F] to-[#8B0620] text-white overflow-hidden">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0">
-                  <span className="text-[#CC092F] font-bold text-xl">B</span>
+        <motion.div variants={bannerVariants}>
+          <Link to="/bradesco" className="block">
+            <motion.div 
+              className="card-modern border-0 bg-gradient-to-r from-[#CC092F] to-[#8B0620] text-white overflow-hidden"
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <motion.div 
+                    className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <span className="text-[#CC092F] font-bold text-xl">B</span>
+                  </motion.div>
+                  <div>
+                    <p className="font-display font-bold text-lg">MOVA + Bradesco</p>
+                    <p className="text-sm text-white/80 flex items-center gap-1">
+                      <CreditCard className="w-3.5 h-3.5" /> R$ 1 gasto = 0,5 KM
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-display font-bold text-lg">MOVA + Bradesco</p>
-                  <p className="text-sm text-white/80 flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5" /> R$ 1 gasto = 0,5 KM
-                  </p>
-                </div>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                >
+                  <ArrowRight className="w-5 h-5 opacity-80" />
+                </motion.div>
               </div>
-              <ArrowRight className="w-5 h-5 opacity-80" />
-            </div>
-          </div>
-        </Link>
+            </motion.div>
+          </Link>
+        </motion.div>
 
         {/* Main Action Button */}
-        <Button
-          onClick={() => navigate('/rides')}
-          className="w-full h-14 text-base font-semibold gap-2"
-          size="lg"
-        >
-          <Calendar className="w-5 h-5" />
-          Ver Corridas Agendadas
-        </Button>
+        <motion.div variants={buttonVariants}>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Button
+              onClick={() => navigate('/rides')}
+              className="w-full h-14 text-base font-semibold gap-2"
+              size="lg"
+            >
+              <Calendar className="w-5 h-5" />
+              Ver Corridas Agendadas
+            </Button>
+          </motion.div>
+        </motion.div>
 
         {/* Next Ride Preview */}
         {nextRide && (
-          <div className="animate-slide-up">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-foreground">Próxima Corrida</h3>
               <span className="text-sm text-muted-foreground font-mono">
                 {format(new Date(nextRide.pickupTime), "HH:mm")}
               </span>
             </div>
-            <RideCard 
-              ride={nextRide} 
-              onClick={() => navigate(`/rides/${nextRide.id}`)}
-            />
-          </div>
+            <motion.div 
+              whileHover={{ scale: 1.01, y: -2 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <RideCard 
+                ride={nextRide} 
+                onClick={() => navigate(`/rides/${nextRide.id}`)}
+              />
+            </motion.div>
+          </motion.div>
         )}
 
         {/* Empty State */}
         {!nextRide && dailyStats.scheduledRides === 0 && (
-          <div className="text-center py-10 animate-fade-in">
-            <div className="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <motion.div 
+            className="text-center py-10"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <motion.div 
+              className="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4"
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
               <MapPin className="w-10 h-10 text-muted-foreground" />
-            </div>
+            </motion.div>
             <p className="text-foreground font-medium">
               Nenhuma corrida agendada para hoje
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               Mantenha seu status disponível para receber novas corridas
             </p>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     </PageContainer>
   );
 }
