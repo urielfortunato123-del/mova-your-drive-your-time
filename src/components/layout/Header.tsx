@@ -23,8 +23,18 @@ export function Header({ title = "MOVA", showStatus = true }: HeaderProps) {
     .toUpperCase() || 'MO';
 
   return (
-    <header className="sticky top-0 glass border-b border-border/50 z-40 safe-top">
-      <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
+    <header className="sticky top-0 z-40 safe-top">
+      {/* Liquid Glass background */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: "linear-gradient(135deg, hsl(var(--card) / 0.7) 0%, hsl(var(--card) / 0.5) 100%)",
+          backdropFilter: "blur(40px) saturate(180%)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          borderBottom: "1px solid hsl(var(--border) / 0.3)",
+        }}
+      />
+      <div className="relative flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
         <h1 className="text-xl font-display font-bold text-gradient-primary">{title}</h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />

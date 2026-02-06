@@ -18,7 +18,11 @@ const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
+  <DrawerPrimitive.Overlay 
+    ref={ref} 
+    className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm", className)} 
+    {...props} 
+  />
 ));
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
@@ -31,12 +35,17 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col",
+        "rounded-t-3xl border-t border-x border-border/30",
+        "bg-gradient-to-b from-card/95 to-card/85",
+        "backdrop-blur-[40px] saturate-[180%]",
+        "shadow-[0_-24px_80px_hsl(var(--background)/0.5),inset_0_1px_0_hsl(var(--foreground)/0.05)]",
         className,
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {/* Liquid Glass handle */}
+      <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-muted/50 backdrop-blur-sm" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
