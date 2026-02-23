@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Ride, RideStatus } from "@/types/ride";
-import { Clock, MapPin, ChevronRight, CheckCircle, XCircle, Navigation } from "lucide-react";
+import { Clock, MapPin, ChevronRight, CheckCircle, XCircle, Navigation, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -61,6 +61,16 @@ export function RideCard({ ride, onClick, compact = false }: RideCardProps) {
               {status.label}
             </span>
           </div>
+
+          {/* Passenger count */}
+          {ride.passengerCount && ride.passengerCount > 1 && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <Users className="w-4 h-4 text-primary" />
+              <span className="text-xs font-medium text-primary">
+                {ride.passengerCount} passageiros (+R$ {((ride.passengerCount - 1) * 5).toFixed(2)})
+              </span>
+            </div>
+          )}
 
           {/* Addresses */}
           <div className="space-y-1.5">

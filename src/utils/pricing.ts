@@ -6,20 +6,24 @@ export const PRICING = {
   PRICE_PER_KM: 2.00,     // Preço por km (R$)
   WAIT_PER_MIN: 0.25,     // Espera após tolerância (R$/min)
   WAIT_TOLERANCE: 15,     // Tolerância de espera (minutos)
+  EXTRA_PASSENGER: 5.00,  // Valor por passageiro extra (R$)
 };
 
 export interface RidePriceResult {
   baseFare: number;
   distanceValue: number;
   waitingValue: number;
+  passengerSurcharge: number;
   totalValue: number;
   distanceKm: number;
+  passengerCount: number;
 }
 
 // Calcula o valor da corrida
 export function calculateRidePrice(
   distanceKm: number, 
-  waitingMinutes: number = 0
+  waitingMinutes: number = 0,
+  passengerCount: number = 1
 ): RidePriceResult {
   const baseFare = PRICING.BASE_FARE;
   const distanceValue = distanceKm * PRICING.PRICE_PER_KM;
@@ -27,13 +31,19 @@ export function calculateRidePrice(
   // Espera só cobra após tolerância
   const chargeableWait = Math.max(0, waitingMinutes - PRICING.WAIT_TOLERANCE);
   const waitingValue = chargeableWait * PRICING.WAIT_PER_MIN;
+
+  // Passageiros extras (a partir do 2º)
+  const extraPassengers = Math.max(0, passengerCount - 1);
+  const passengerSurcharge = extraPassengers * PRICING.EXTRA_PASSENGER;
   
-  const totalValue = baseFare + distanceValue + waitingValue;
+  const totalValue = baseFare + distanceValue + waitingValue + passengerSurcharge;
 
   return {
     baseFare: Math.round(baseFare * 100) / 100,
     distanceValue: Math.round(distanceValue * 100) / 100,
     waitingValue: Math.round(waitingValue * 100) / 100,
+    passengerSurcharge: Math.round(passengerSurcharge * 100) / 100,
+    passengerCount,
     totalValue: Math.round(totalValue * 100) / 100,
     distanceKm: Math.round(distanceKm * 10) / 10,
   };

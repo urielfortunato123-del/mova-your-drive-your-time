@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, DollarSign, User, Navigation, Loader2, Wifi, WifiOff, CreditCard, Banknote, QrCode } from 'lucide-react';
+import { MapPin, Clock, DollarSign, User, Users, Navigation, Loader2, Wifi, WifiOff, CreditCard, Banknote, QrCode } from 'lucide-react';
 import { useRideOffers } from '@/hooks/useRideOffers';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -159,6 +159,23 @@ function RideOfferCard({ offer, onAccept, isAccepting, timeRemaining }: RideOffe
             <p className="text-sm font-medium truncate">{ride.dest_address}</p>
           </div>
         </div>
+
+        {/* Passenger Count */}
+        {ride.passenger_count && ride.passenger_count > 0 && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
+            <Users className="w-5 h-5 text-primary" />
+            <div className="flex-1">
+              <p className="font-medium text-sm text-primary">
+                {ride.passenger_count} passageiro{ride.passenger_count > 1 ? 's' : ''}
+              </p>
+              {ride.passenger_count > 1 && (
+                <p className="text-xs text-primary/70">
+                  +R$ {((ride.passenger_count - 1) * 5).toFixed(2)} adicional
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Payment Method */}
         <PaymentMethodBadge 
