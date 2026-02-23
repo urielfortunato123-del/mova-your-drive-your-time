@@ -19,6 +19,7 @@ export interface Ride {
   dropoffAddress: string;
   estimatedValue: number;
   status: RideStatus;
+  passengerCount?: number; // número de passageiros
   waitingTime?: number; // in minutes
   waitingValue?: number; // calculated based on waiting time
   startedAt?: string;
