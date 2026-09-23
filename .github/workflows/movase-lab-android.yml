@@ -47,16 +47,16 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace
 
       - name: Rename APK
-        run: cp movase-lab/app/build/outputs/apk/debug/app-debug.apk MOVA-SE_LAB_Walk_0.1.apk
+        run: cp movase-lab/app/build/outputs/apk/debug/app-debug.apk MOVA-SE_LAB_Walk_0.2_MAP.apk
 
       - name: APK checksum
-        run: sha256sum MOVA-SE_LAB_Walk_0.1.apk | tee MOVA-SE_LAB_Walk_0.1_SHA256.txt
+        run: sha256sum MOVA-SE_LAB_Walk_0.2_MAP.apk | tee MOVA-SE_LAB_Walk_0.2_MAP_SHA256.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MOVA-SE_LAB_Walk_0.1
+          name: MOVA-SE_LAB_Walk_0.2_MAP
           path: |
-            MOVA-SE_LAB_Walk_0.1.apk
-            MOVA-SE_LAB_Walk_0.1_SHA256.txt
+            MOVA-SE_LAB_Walk_0.2_MAP.apk
+            MOVA-SE_LAB_Walk_0.2_MAP_SHA256.txt
           if-no-files-found: error
