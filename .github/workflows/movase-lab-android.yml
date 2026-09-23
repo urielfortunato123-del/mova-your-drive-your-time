@@ -52,6 +52,13 @@ jobs:
       - name: APK checksum
         run: sha256sum MOVA-SE_LAB_Walk_0.2_MAP.apk | tee MOVA-SE_LAB_Walk_0.2_MAP_SHA256.txt
 
+      - name: Collect apksig jar
+        shell: bash
+        run: |
+          JAR=$(find ~/.gradle/caches -type f -name 'apksig-*.jar' | head -n 1)
+          test -n "$JAR"
+          cp "$JAR" apksig.jar
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -59,4 +66,5 @@ jobs:
           path: |
             MOVA-SE_LAB_Walk_0.2_MAP.apk
             MOVA-SE_LAB_Walk_0.2_MAP_SHA256.txt
+            apksig.jar
           if-no-files-found: error
