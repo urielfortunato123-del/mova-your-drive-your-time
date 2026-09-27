@@ -1,0 +1,3 @@
+https://jiwzrhzifmmxqdfrymqx.supabase.co/storage/v1/object/public/voltai-temp/VoltAI_0_41_PREMIUM_AGENT_CORE_UPDATE.apk.part01
+https://jiwzrhzifmmxqdfrymqx.supabase.co/storage/v1/object/public/voltai-temp/VoltAI_0_41_PREMIUM_AGENT_CORE_UPDATE.apk.part02
+https://jiwzrhzifmmxqdfrymqx.supabase.co/storage/v1/object/public/voltai-temp/VoltAI_0_41_PREMIUM_AGENT_CORE_UPDATE.apk.part03
