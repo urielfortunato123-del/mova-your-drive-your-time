@@ -1,0 +1,99 @@
+name: Build MOVA Android DEV
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - android-native-apk
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android 16 SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Install web dependencies
+        run: npm install
+
+      - name: Install Capacitor Android
+        run: |
+          npm install --no-save             @capacitor/core@8             @capacitor/cli@8             @capacitor/android@8             @capacitor/status-bar@8             @capacitor/splash-screen@8
+
+      - name: Build MOVA web bundle
+        run: npm run build
+
+      - name: Create Android project
+        run: |
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+
+      - name: Add native permissions
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text(encoding="utf-8")
+          permissions = [
+              "android.permission.CAMERA",
+              "android.permission.RECORD_AUDIO",
+              "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.ACCESS_FINE_LOCATION",
+              "android.permission.POST_NOTIFICATIONS",
+          ]
+          missing = [
+              f'    <uses-permission android:name="{perm}" />'
+              for perm in permissions
+              if perm not in s
+          ]
+          if missing:
+              s = s.replace("<application", "\n".join(missing) + "\n\n    <application", 1)
+          p.write_text(s, encoding="utf-8")
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare artifact
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk MOVA_Android_DEV_01.apk
+          sha256sum MOVA_Android_DEV_01.apk > MOVA_Android_DEV_01.sha256.txt
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOVA-Android-DEV-01
+          path: |
+            MOVA_Android_DEV_01.apk
+            MOVA_Android_DEV_01.sha256.txt
+          if-no-files-found: error
+          retention-days: 30
