@@ -45,6 +45,8 @@ jobs:
           npm install --no-save             @capacitor/core@8             @capacitor/cli@8             @capacitor/android@8             @capacitor/status-bar@8             @capacitor/splash-screen@8
 
       - name: Build MOVA web bundle
+        env:
+          VITE_MOVA_DEV_LOGIN: "true"
         run: npm run build
 
       - name: Create Android project
