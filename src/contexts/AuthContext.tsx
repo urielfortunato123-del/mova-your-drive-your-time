@@ -29,23 +29,67 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const DEV_LOGIN_ENABLED = import.meta.env.VITE_MOVA_DEV_LOGIN === 'true';
+const DEV_LOGIN_EMAIL = 'dev@mova.app';
+const DEV_LOGIN_PASSWORD_SHA256 = '94aacffe72d20f8db263792fb92df389972e24377452beafed55c79489a3263f';
+const DEV_AUTH_STORAGE_KEY = 'mova-dev-auth';
+
+const DEV_USER = {
+  id: '00000000-0000-4000-8000-000000000001',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: DEV_LOGIN_EMAIL,
+  app_metadata: { provider: 'dev', providers: ['dev'], mova_dev: true },
+  user_metadata: { name: 'MOVA DEV' },
+  created_at: '2026-09-30T00:00:00.000Z',
+} as User;
+
+const DEV_DRIVER: DriverProfile = {
+  id: '00000000-0000-4000-8000-000000000002',
+  name: 'MOVA DEV',
+  email: DEV_LOGIN_EMAIL,
+  vehicle: 'Veículo DEV',
+  plate: 'DEV-0001',
+  city: 'Bauru - SP',
+  isActive: true,
+};
+
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hash))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [devAuthenticated, setDevAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    const restoreDevSession =
+      DEV_LOGIN_ENABLED && localStorage.getItem(DEV_AUTH_STORAGE_KEY) === '1';
+
+    if (restoreDevSession) {
+      setDevAuthenticated(true);
+      setUser(DEV_USER);
+      setSession(null);
+      setDriver(DEV_DRIVER);
+      setIsLoading(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch with setTimeout to avoid deadlock
-        if (session?.user) {
+      (_event, nextSession) => {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user) {
           setTimeout(() => {
-            fetchDriverProfile(session.user.id);
+            fetchDriverProfile(nextSession.user.id);
           }, 0);
         } else {
           setDriver(null);
@@ -53,13 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchDriverProfile(session.user.id);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+
+      if (existingSession?.user) {
+        fetchDriverProfile(existingSession.user.id);
       }
       setIsLoading(false);
     });
@@ -91,8 +134,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (DEV_LOGIN_ENABLED && normalizedEmail === DEV_LOGIN_EMAIL) {
+      const passwordHash = await sha256(password);
+
+      if (passwordHash !== DEV_LOGIN_PASSWORD_SHA256) {
+        return { error: 'E-mail ou senha incorretos' };
+      }
+
+      localStorage.setItem(DEV_AUTH_STORAGE_KEY, '1');
+      setDevAuthenticated(true);
+      setSession(null);
+      setUser(DEV_USER);
+      setDriver(DEV_DRIVER);
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: normalizedEmail,
       password,
     });
 
@@ -108,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name?: string): Promise<{ error: string | null }> => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -131,6 +191,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    if (devAuthenticated) {
+      localStorage.removeItem(DEV_AUTH_STORAGE_KEY);
+      setDevAuthenticated(false);
+      setUser(null);
+      setSession(null);
+      setDriver(null);
+      return;
+    }
+
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -138,22 +207,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshDriver = async () => {
+    if (devAuthenticated) {
+      setDriver(DEV_DRIVER);
+      return;
+    }
+
     if (user) {
       await fetchDriverProfile(user.id);
     }
   };
 
-  const isAuthenticated = !!session;
+  const isAuthenticated = devAuthenticated || !!session;
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      user, 
-      session, 
-      driver, 
-      isLoading, 
-      login, 
-      signUp, 
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      user,
+      session,
+      driver,
+      isLoading,
+      login,
+      signUp,
       logout,
       refreshDriver
     }}>
