@@ -73,7 +73,7 @@ s = s.replace('.take(1200).forEach { e ->', '.take(650).forEach { e ->')
 s = s.replace('val scored = correctionPool(d, clean).asSequence().take(1800)', 'val scored = correctionPool(d, clean).asSequence().take(900)')
 s = s.replace('.take(120)\n            .forEach { e ->', '.take(80)\n            .forEach { e ->')
 pattern = re.compile(r'''    private fun loadCounter\(context: Context, key: String\): Map<String, Int> \{.*?    private fun saveCounter\(context: Context,key:String,map:Map<String,Int>\) \{.*?\n    \}\n''', re.S)
-new_counter = '''    private fun loadCounter(context: Context, key: String): Map<String, Int> = synchronized(counterCache) {
+new_counter = r'''    private fun loadCounter(context: Context, key: String): Map<String, Int> = synchronized(counterCache) {
         counterCache[key] ?: run {
             val raw=context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).getString(key,"").orEmpty()
             val parsed = if(raw.isBlank()) emptyMap() else LinkedHashMap<String,Int>().also { out ->
@@ -94,7 +94,7 @@ new_counter = '''    private fun loadCounter(context: Context, key: String): Map
         context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).edit().putString(key,raw).apply()
     }
 '''
-s, n = pattern.subn(new_counter, s, count=1)
+s, n = pattern.subn(lambda _: new_counter, s, count=1)
 if n != 1:
     raise SystemExit("Patch failed [counter-cache-regex]")
 s = s.replace(
