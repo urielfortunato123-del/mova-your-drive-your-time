@@ -12,6 +12,7 @@ def replace_once(path: Path, old: str, new: str, label: str):
 # Build/version + clean side-by-side package for Agent 0.3.1.
 p = ROOT / "app/build.gradle.kts"
 s = p.read_text()
+s = s.replace('create("test") {', 'create("side") {')
 s = s.replace('versionCode = 10', 'versionCode = 11')
 s = s.replace('versionName = "0.3.0"', 'versionName = "0.3.1"')
 s = s.replace('applicationIdSuffix = ".test"', 'applicationIdSuffix = ".agent031"')
