@@ -1,9 +1,9 @@
-name: ViaKey 0.3.1 Agent Build
+name: ViaKey 0.3.2 Smooth Build
 
 on:
   push:
     branches:
-      - ci/viakey-v0.3.1-agent
+      - ci/viakey-v0.3.2-smooth2
   workflow_dispatch:
 
 permissions:
@@ -51,6 +51,10 @@ jobs:
           grep -R "Agente de digitação" -n /tmp/viakey-build/app/src/main/java/com/mova/viakey/SettingsActivity.kt
           grep -R "TypingAgent" -n /tmp/viakey-build/app/src/main/java/com/mova/viakey/ViaKeyService.kt
 
+      - name: Apply Smooth performance patch
+        shell: bash
+        run: python3 viakey-ci/smooth032/apply_performance_patch.py
+
       - name: Prepare language dictionaries
         working-directory: /tmp/viakey-build
         run: python3 tools/prepare_frequency_words.py
@@ -63,13 +67,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/out
-          cp /tmp/viakey-build/app/build/outputs/apk/standard/debug/app-standard-debug.apk /tmp/out/ViaKeyAI_v0.3.1-standard-debug.apk
-          cp /tmp/viakey-build/app/build/outputs/apk/side/debug/app-side-debug.apk /tmp/out/ViaKeyAI_v0.3.1_AGENT-side-by-side.apk
+          cp /tmp/viakey-build/app/build/outputs/apk/standard/debug/app-standard-debug.apk /tmp/out/ViaKeyAI_v0.3.2-standard-debug.apk
+          cp /tmp/viakey-build/app/build/outputs/apk/side/debug/app-side-debug.apk /tmp/out/ViaKeyAI_v0.3.2_SMOOTH-side-by-side.apk
           sha256sum /tmp/out/*.apk
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: ViaKeyAI-v0.3.1-agent-apks
+          name: ViaKeyAI-v0.3.2-smooth-apks
           path: /tmp/out/*.apk
           if-no-files-found: error
