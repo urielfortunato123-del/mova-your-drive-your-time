@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path("/tmp/viakey-build")
 JAVA = ROOT / "app/src/main/java/com/mova/viakey"
@@ -71,24 +72,8 @@ if 'private val counterCache' not in s:
 s = s.replace('.take(1200).forEach { e ->', '.take(650).forEach { e ->')
 s = s.replace('val scored = correctionPool(d, clean).asSequence().take(1800)', 'val scored = correctionPool(d, clean).asSequence().take(900)')
 s = s.replace('.take(120)\n            .forEach { e ->', '.take(80)\n            .forEach { e ->')
-old = '''    private fun loadCounter(context: Context, key: String): Map<String, Int> {
-        val raw=context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).getString(key,"").orEmpty()
-        if(raw.isBlank()) return emptyMap()
-        val out=LinkedHashMap<String,Int>()
-        raw.lineSequence().forEach { line ->
-            val tab=line.lastIndexOf('\t'); if(tab<=0) return@forEach
-            val token=line.substring(0,tab); val count=line.substring(tab+1).toIntOrNull() ?: return@forEach
-            if(token.isNotBlank()) out[token]=count
-        }
-        return out
-    }
-
-    private fun saveCounter(context: Context,key:String,map:Map<String,Int>) {
-        val raw=map.entries.joinToString("\n") { "${it.key}\t${it.value}" }
-        context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).edit().putString(key,raw).apply()
-    }
-'''
-new = '''    private fun loadCounter(context: Context, key: String): Map<String, Int> = synchronized(counterCache) {
+pattern = re.compile(r'''    private fun loadCounter\(context: Context, key: String\): Map<String, Int> \{.*?    private fun saveCounter\(context: Context,key:String,map:Map<String,Int>\) \{.*?\n    \}\n''', re.S)
+new_counter = '''    private fun loadCounter(context: Context, key: String): Map<String, Int> = synchronized(counterCache) {
         counterCache[key] ?: run {
             val raw=context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).getString(key,"").orEmpty()
             val parsed = if(raw.isBlank()) emptyMap() else LinkedHashMap<String,Int>().also { out ->
@@ -109,7 +94,9 @@ new = '''    private fun loadCounter(context: Context, key: String): Map<String,
         context.getSharedPreferences(LEARNING_FILE,Context.MODE_PRIVATE).edit().putString(key,raw).apply()
     }
 '''
-s = must_replace(s, old, new, "counter-cache")
+s, n = pattern.subn(new_counter, s, count=1)
+if n != 1:
+    raise SystemExit("Patch failed [counter-cache-regex]")
 s = s.replace(
     'context.getSharedPreferences(LEARNING_FILE, Context.MODE_PRIVATE).edit().clear().apply()',
     'context.getSharedPreferences(LEARNING_FILE, Context.MODE_PRIVATE).edit().clear().apply()\n        synchronized(counterCache){ counterCache.clear() }'
