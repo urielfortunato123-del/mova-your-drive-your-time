@@ -1,0 +1,1 @@
+ViaKey v0.3.0 build trigger after side flavor fix
