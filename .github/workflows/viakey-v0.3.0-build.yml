@@ -1,0 +1,71 @@
+name: ViaKey 0.3.0 Android Build
+
+on:
+  push:
+    branches:
+      - ci/viakey-v0.3.0-build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android API 36
+        shell: bash
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          echo "sdkmanager=$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Restore ViaKey source
+        shell: bash
+        run: |
+          mkdir -p /tmp/viakey-build
+          cat viakey030-ci/part*.txt | base64 --decode > /tmp/viakey.tar.xz
+          tar -xJf /tmp/viakey.tar.xz -C /tmp/viakey-build
+          test -f /tmp/viakey-build/settings.gradle.kts
+          echo "ViaKey 0.3.0 source restored."
+
+      - name: Prepare 50k language dictionaries
+        working-directory: /tmp/viakey-build
+        run: python3 tools/prepare_frequency_words.py
+
+      - name: Build standard and side-by-side APKs
+        working-directory: /tmp/viakey-build
+        run: gradle :app:assembleStandardDebug :app:assembleTestDebug --stacktrace
+
+      - name: Collect APKs
+        shell: bash
+        run: |
+          find /tmp/viakey-build/app/build/outputs/apk -type f -name "*.apk" -print
+          cp /tmp/viakey-build/app/build/outputs/apk/standard/debug/app-standard-debug.apk /tmp/ViaKeyAI_v0.3.0-standard-debug.apk
+          cp /tmp/viakey-build/app/build/outputs/apk/test/debug/app-test-debug.apk /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
+          sha256sum /tmp/ViaKeyAI_v0.3.0-*.apk /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ViaKeyAI-v0.3.0-apks
+          path: |
+            /tmp/ViaKeyAI_v0.3.0-standard-debug.apk
+            /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
+          if-no-files-found: error
