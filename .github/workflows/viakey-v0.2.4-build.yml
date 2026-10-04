@@ -54,16 +54,29 @@ jobs:
         working-directory: /tmp/viakey-build
         run: gradle :app:assembleDebug --stacktrace
 
-      - name: Verify and rename APK
+      - name: Verify and rename main APK
         run: |
           test -f /tmp/viakey-build/app/build/outputs/apk/debug/app-debug.apk
           cp /tmp/viakey-build/app/build/outputs/apk/debug/app-debug.apk /tmp/ViaKeyAI_v0.2.4-debug.apk
-          ls -lh /tmp/ViaKeyAI_v0.2.4-debug.apk
           sha256sum /tmp/ViaKeyAI_v0.2.4-debug.apk
 
-      - name: Upload APK
+      - name: Build side-by-side test APK
+        shell: bash
+        run: |
+          cp -a /tmp/viakey-build /tmp/viakey-test
+          sed -i 's/applicationId = "com.mova.viakey"/applicationId = "com.mova.viakey.test"/' /tmp/viakey-test/app/build.gradle.kts
+          sed -i 's/android:label="ViaKey AI"/android:label="ViaKey AI Test"/g' /tmp/viakey-test/app/src/main/AndroidManifest.xml
+          cd /tmp/viakey-test
+          gradle :app:assembleDebug --stacktrace
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/ViaKeyAI_v0.2.4_TEST-side-by-side.apk
+          sha256sum /tmp/ViaKeyAI_v0.2.4_TEST-side-by-side.apk
+
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: ViaKeyAI-v0.2.4-debug
-          path: /tmp/ViaKeyAI_v0.2.4-debug.apk
+          name: ViaKeyAI-v0.2.4-apks
+          path: |
+            /tmp/ViaKeyAI_v0.2.4-debug.apk
+            /tmp/ViaKeyAI_v0.2.4_TEST-side-by-side.apk
           if-no-files-found: error
