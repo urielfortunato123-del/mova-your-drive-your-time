@@ -43,7 +43,8 @@ jobs:
           cat viakey-ci/chunks/part*.txt | base64 --decode > /tmp/viakey.tar.xz
           tar -xJf /tmp/viakey.tar.xz -C /tmp/viakey-build
           test -f /tmp/viakey-build/settings.gradle.kts
-          sed -i 's/create("test") {/create("side") {/' /tmp/viakey-build/app/build.gradle.kts\n          echo "ViaKey 0.3.0 source restored and flavor normalized."
+          sed -i 's/create("test") {/create("side") {/' /tmp/viakey-build/app/build.gradle.kts
+          echo "ViaKey 0.3.0 source restored and flavor normalized."
 
       - name: Prepare 50k language dictionaries
         working-directory: /tmp/viakey-build
