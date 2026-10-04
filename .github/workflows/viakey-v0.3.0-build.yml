@@ -51,14 +51,14 @@ jobs:
 
       - name: Build standard and side-by-side APKs
         working-directory: /tmp/viakey-build
-        run: gradle :app:assembleStandardDebug :app:assembleTestDebug --stacktrace
+        run: gradle :app:assembleStandardDebug :app:assembleSideDebug --stacktrace
 
       - name: Collect APKs
         shell: bash
         run: |
           find /tmp/viakey-build/app/build/outputs/apk -type f -name "*.apk" -print
           cp /tmp/viakey-build/app/build/outputs/apk/standard/debug/app-standard-debug.apk /tmp/ViaKeyAI_v0.3.0-standard-debug.apk
-          cp /tmp/viakey-build/app/build/outputs/apk/test/debug/app-test-debug.apk /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
+          cp /tmp/viakey-build/app/build/outputs/apk/side/debug/app-side-debug.apk /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
           sha256sum /tmp/ViaKeyAI_v0.3.0-*.apk /tmp/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
 
       - name: Upload APKs
