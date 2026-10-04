@@ -44,6 +44,8 @@ jobs:
           tar -xJf /tmp/viakey.tar.xz -C /tmp/viakey-build
           test -f /tmp/viakey-build/settings.gradle.kts
           sed -i 's/create("test") {/create("side") {/' /tmp/viakey-build/app/build.gradle.kts
+          sed -i 's/applicationIdSuffix = ".test"/applicationIdSuffix = ".lab030"/' /tmp/viakey-build/app/build.gradle.kts
+          sed -i 's/ViaKey AI Test/ViaKey AI LAB 0.3/' /tmp/viakey-build/app/build.gradle.kts
           sed -i 's/private val neighborMap: Map<Char, Set<Char>> = buildMap {/private val neighborMap: Map<Char, MutableSet<Char>> = buildMap {/' /tmp/viakey-build/app/src/main/java/com/mova/viakey/SuggestionEngine.kt
           echo "ViaKey 0.3.0 source restored and compile fixes applied."
 
@@ -61,7 +63,7 @@ jobs:
           mkdir -p /tmp/out
           find /tmp/viakey-build/app/build/outputs/apk -type f -name "*.apk" -print
           cp /tmp/viakey-build/app/build/outputs/apk/standard/debug/app-standard-debug.apk /tmp/out/ViaKeyAI_v0.3.0-standard-debug.apk
-          cp /tmp/viakey-build/app/build/outputs/apk/side/debug/app-side-debug.apk /tmp/out/ViaKeyAI_v0.3.0_TEST-side-by-side.apk
+          cp /tmp/viakey-build/app/build/outputs/apk/side/debug/app-side-debug.apk /tmp/out/ViaKeyAI_v0.3.0_LAB-fresh-install.apk
           sha256sum /tmp/out/*.apk
 
       - name: Upload APKs
