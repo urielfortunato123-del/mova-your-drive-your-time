@@ -47,42 +47,46 @@ s = must(
 ''',
     "adaptive-geometry"
 )
-s = s.replace('        val baseBottom=dp(if(mode=="normal") 6f else 10f)', '        val baseBottom=dp(if(mode=="normal") 4f else 8f)')
-s = s.replace('background=rounded(p.background,if(mode=="normal")22f else 24f)', 'background=rounded(p.background,if(mode=="normal")18f else 22f)')
+s = s.replace('        val baseBottom=dp(if(mode=="normal") 7f else 11f)', '        val baseBottom=dp(if(mode=="normal") 4f else 8f)')
+s = s.replace('background=rounded(p.background,if(mode=="normal")0f else 18f)', 'background=rounded(p.background,if(mode=="normal")18f else 22f)')
 
 # Slimmer iOS-like suggestion strip.
-s = s.replace('background=rounded(p.panel,20f)', 'background=rounded(p.panel,16f)')
-s = s.replace('setPadding(dp(3f),0,dp(3f),0)', 'setPadding(dp(2f),0,dp(2f),0)')
-s = s.replace('elevation=dp(1f).toFloat()', 'elevation=0f', 1)
-s = s.replace('LinearLayout.LayoutParams(-1,dp(42f*scale))', 'LinearLayout.LayoutParams(-1,dp(40f*scale))')
-s = s.replace('leftMargin=dp(3f); rightMargin=dp(3f); bottomMargin=gap+dp(1f)', 'leftMargin=dp(4f); rightMargin=dp(4f); bottomMargin=dp(3f)')
-s = s.replace('background=if(accent)rounded(p.accent,16f) else null', 'background=if(accent)rounded(p.accent,13f) else null')
+s = s.replace('background=rounded(p.panel,14f)', 'background=rounded(p.panel,16f)')
+s = s.replace('setPadding(gap,0,gap,0)', 'setPadding(dp(2f),0,dp(2f),0)')
+s = s.replace('LinearLayout.LayoutParams(-1,dp(46f*scale))', 'LinearLayout.LayoutParams(-1,dp(40f*scale))')
+s = s.replace('root.addView(row,LinearLayout.LayoutParams(-1,dp(40f*scale)).apply{bottomMargin=gap})', 'root.addView(row,LinearLayout.LayoutParams(-1,dp(40f*scale)).apply{leftMargin=dp(4f); rightMargin=dp(4f); bottomMargin=dp(3f)})')
+s = s.replace('background=if(accent)rounded(p.accent,10f) else null', 'background=if(accent)rounded(p.accent,13f) else null')
 
 # Row proportions closer to the physical reference.
-s = s.replace('LinearLayout.LayoutParams(0,dp(keyHeight),.44f)', 'LinearLayout.LayoutParams(0,dp(keyHeight),.46f)')
-s = s.replace('val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.34f else 1f', 'val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.30f else 1f')
+s = s.replace('LinearLayout.LayoutParams(0,dp(keyHeight),.5f)', 'LinearLayout.LayoutParams(0,dp(keyHeight),.46f)')
+s = s.replace('val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.5f else 1f', 'val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.30f else 1f')
 
 # Key typography.
-s = s.replace(
-    '''        typeface=Typeface.create("sans-serif",Typeface.NORMAL)
-        letterSpacing=.01f
-        background=iosKeyDrawable(bg)
-        elevation=dp(1.5f).toFloat()
-        setPadding(dp(1f),0,dp(1f),0)
-''',
-    '''        typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL)
+s = must(
+    s,
+    '    private fun keyButton(label:CharSequence,bg:Int,fg:Int,font:Float,height:Float,action:()->Unit)=TextView(this).apply{text=label;textSize=font;gravity=Gravity.CENTER;setTextColor(fg);background=rounded(bg,9f);elevation=dp(3f).toFloat();setPadding(dp(2f),0,dp(2f),0);setOnTouchListener{v,e->when(e.actionMasked){MotionEvent.ACTION_DOWN->{press(v,true);feedback();if(label.length==1&&label[0].isLetterOrDigit())showKeyPreview(this,label.toString())};MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{hideKeyPreview();press(v,false)}};false};setOnClickListener{lastAutoCorrection=null;action();manualSuggestions=emptyList()}}',
+    '''    private fun keyButton(label:CharSequence,bg:Int,fg:Int,font:Float,height:Float,action:()->Unit)=TextView(this).apply{
+        text=label
+        textSize=font
+        gravity=Gravity.CENTER
+        setTextColor(fg)
+        typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL)
         letterSpacing=0f
         background=iosKeyDrawable(bg)
         elevation=0f
         setPadding(dp(.5f),0,dp(.5f),0)
-'''
+        includeFontPadding=false
+        setOnTouchListener{v,e->when(e.actionMasked){MotionEvent.ACTION_DOWN->{press(v,true);feedback();if(label.length==1&&label[0].isLetterOrDigit())showKeyPreview(this,label.toString())};MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{hideKeyPreview();press(v,false)}};false}
+        setOnClickListener{lastAutoCorrection=null;action();manualSuggestions=emptyList()}
+    }''',
+    "key-button"
 )
 
 # Press feedback: no shrinking hit target.
 old_press = '''    private fun press(v:View,on:Boolean){
         v.animate().cancel()
         if(on){
-            v.translationY=dp(1f).toFloat();v.scaleX=.988f;v.scaleY=.988f;v.alpha=.95f
+            v.translationY=dp(1.5f).toFloat();v.scaleX=.985f;v.scaleY=.985f;v.alpha=.92f
         }else{
             v.translationY=0f;v.scaleX=1f;v.scaleY=1f;v.alpha=1f
         }
@@ -98,13 +102,8 @@ new_press = '''    private fun press(v:View,on:Boolean){
 s = must(s, old_press, new_press, "press-feedback")
 
 # Replace margin-based buttons with continuous hit cells + inset keycaps.
-old_renderer = '''    private fun weightedParams(weight:Float,height:Float,gap:Int)=LinearLayout.LayoutParams(0,dp(height),weight).apply{val g=maxOf(1,gap/2);setMargins(g,g,g,g)}
+old_renderer = '''    private fun weightedParams(weight:Float,height:Float,gap:Int)=LinearLayout.LayoutParams(0,dp(height),weight).apply{setMargins(gap/2,gap/2,gap/2,gap/2)}
     private fun rounded(color:Int,radius:Float)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
-    private fun iosKeyDrawable(color:Int)=GradientDrawable().apply{
-        setColor(color)
-        cornerRadius=dp(6.5f).toFloat()
-        setStroke(dp(.35f),if(ThemeUtil.isDark(this@ViaKeyService))Color.argb(42,255,255,255) else Color.argb(28,0,0,0))
-    }
 '''
 new_renderer = '''    private fun weightedParams(weight:Float,height:Float,gap:Int)=LinearLayout.LayoutParams(0,dp(height),weight)
     private fun rounded(color:Int,radius:Float)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
@@ -158,8 +157,8 @@ new_renderer = '''    private fun weightedParams(weight:Float,height:Float,gap:I
 s = must(s, old_renderer, new_renderer, "key-renderer")
 
 # Preview uses the same key material.
-s = s.replace('bubble.background=rounded(p.key,10f)', 'bubble.background=iosKeyDrawable(p.key)')
-s = s.replace('val w=dp(56f);val h=dp(64f)', 'val w=dp(54f);val h=dp(62f)')
+s = s.replace('background=rounded(p.key,14f)', 'background=iosKeyDrawable(p.key)')
+s = s.replace('val w=dp(56f); val h=dp(64f)', 'val w=dp(54f); val h=dp(62f)')
 
 p.write_text(s)
 print("ViaKey 0.3.3 iOS Key Renderer patch applied.")
