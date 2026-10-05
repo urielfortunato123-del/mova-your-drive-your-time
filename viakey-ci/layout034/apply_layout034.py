@@ -27,7 +27,7 @@ s=re.sub(r'versionCode\s*=\s*\d+','versionCode = 14',s,count=1)
 s=re.sub(r'versionName\s*=\s*"[^"]+"','versionName = "0.3.4"',s,count=1)
 s=re.sub(r'applicationIdSuffix\s*=\s*"[^"]+"','applicationIdSuffix = ".ios034"',s,count=1)
 s=re.sub(r'versionNameSuffix\s*=\s*"[^"]+"','versionNameSuffix = "-ios-layout"',s,count=1)
-s=re.sub(r'manifestPlaceholders\["appLabel"\]\s*=\s*"[^"]+"','manifestPlaceholders["appLabel"] = "ViaKey AI iOS 0.3.4"',s,count=1)
+s=s.replace('manifestPlaceholders["appLabel"] = "ViaKey AI iOS 0.3.3"', 'manifestPlaceholders["appLabel"] = "ViaKey AI iOS 0.3.4"')
 p.write_text(s)
 
 p=JAVA/"Prefs.kt"; s=p.read_text()
