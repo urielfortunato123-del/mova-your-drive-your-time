@@ -58,13 +58,12 @@ jobs:
         run: python3 viakey-ci/ios033/apply_ios_renderer_patch.py
 
       - name: Apply iOS Geometry 0.3.4
-        working-directory: /tmp/viakey-build
         shell: bash
         run: |
-          patch -p1 --forward < "$GITHUB_WORKSPACE/viakey-ci/layout034/layout034.patch"
-          grep -n 'versionName = "0.3.4"' app/build.gradle.kts
-          grep -n 'toolbarExpanded' app/src/main/java/com/mova/viakey/ViaKeyService.kt
-          grep -n 'addIOSFooter' app/src/main/java/com/mova/viakey/ViaKeyService.kt
+          python3 viakey-ci/layout034/apply_layout034.py
+          grep -n 'versionName = "0.3.4"' /tmp/viakey-build/app/build.gradle.kts
+          grep -n 'toolbarExpanded' /tmp/viakey-build/app/src/main/java/com/mova/viakey/ViaKeyService.kt
+          grep -n 'addIOSFooter' /tmp/viakey-build/app/src/main/java/com/mova/viakey/ViaKeyService.kt
 
       - name: Prepare dictionaries
         working-directory: /tmp/viakey-build
