@@ -30,6 +30,9 @@ p = JAVA / "ViaKeyService.kt"
 s = p.read_text()
 
 # Renderer imports.
+if 'import android.graphics.Typeface' not in s:
+    s = s.replace('import android.graphics.Color\n', 'import android.graphics.Color\nimport android.graphics.Typeface\n')
+
 if 'android.graphics.drawable.InsetDrawable' not in s:
     s = s.replace(
         'import android.graphics.drawable.GradientDrawable\n',
@@ -50,7 +53,7 @@ s = sub1(
     "adaptive-geometry"
 )
 s = re.sub(r'val baseBottom=dp\(if\(mode=="normal"\) \d+(?:\.\d+)?f else \d+(?:\.\d+)?f\)',
-           'val baseBottom=dp(if(mode=="normal") 4f else 8f', s, count=1)
+           'val baseBottom=dp(if(mode=="normal") 4f else 8f)', s, count=1)
 s = re.sub(r'background=rounded\(p\.background,if\(mode=="normal"\)[^\n]+\)',
            'background=rounded(p.background,if(mode=="normal")18f else 22f)', s, count=1)
 
