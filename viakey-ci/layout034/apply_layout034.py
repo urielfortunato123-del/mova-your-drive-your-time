@@ -200,7 +200,7 @@ new_update='''    private fun updateSuggestions(){
     }
 
 '''
-s=replace_between(s,'    private fun updateSuggestions(){','    private fun requestSuggestionsAsync(',new_update,'update suggestions')
+s=replace_between(s,'    private fun updateSuggestions(){','private fun requestSuggestionsAsync(',new_update,'update suggestions')
 
 s=re.sub(r'val weight=if\(!symbols && \(label=="⇧"\|\|label=="⌫"\)\)\d+(?:\.\d+)?f else 1f',
          'val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.48f else 1f',s,count=1)
@@ -255,7 +255,7 @@ bottom='''    private fun addBottomRow(p:ThemeUtil.Palette,lang:String,scale:Flo
     }
 
 '''
-s=replace_between(s,'    private fun addBottomRow(','    private fun addFooter(',bottom,'bottom row')
+s=replace_between(s,'    private fun addBottomRow(','private fun addFooter(',bottom,'bottom row')
 
 s=re.sub(r'val corner=dp\([^\n]+\)\.toFloat\(\)','val corner=dp(8.0f).toFloat()',s,count=1)
 s=re.sub(r'val xInset=dp\([^\n]+\)','val xInset=dp(1.55f)',s,count=1)
