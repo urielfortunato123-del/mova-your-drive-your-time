@@ -160,21 +160,8 @@ new_update='''    private fun updateSuggestions(){
         val math=if(Prefs.autoMath(this))MathEngine.suggest(before) else null
         val words=when{
             manualSuggestions.isNotEmpty()->manualSuggestions
-            prefix.isNotEmpty()&&Prefs.suggestions(this)->{
-                val key="word|"+lang+"|"+previousForPrefix+"|"+prefix+"|"+Prefs.typingAgent(this)
-                if(asyncSuggestionKey==key) asyncSuggestionWords else {
-                    requestSuggestionsAsync(key,prefix,previousForPrefix,lang,false)
-                    listOf(prefix)
-                }
-            }
-            Prefs.nextWord(this)&&Prefs.suggestions(this)->{
-                val prev=lastWord(before)
-                val key="next|"+lang+"|"+prev+"|"+Prefs.typingAgent(this)
-                if(asyncSuggestionKey==key) asyncSuggestionWords else {
-                    requestSuggestionsAsync(key,"",prev,lang,true)
-                    emptyList()
-                }
-            }
+            prefix.isNotEmpty()&&Prefs.suggestions(this)->liveSuggestions(prefix,previousForPrefix,lang,false)
+            Prefs.nextWord(this)&&Prefs.suggestions(this)->liveSuggestions("",lastWord(before),lang,true)
             else->emptyList()
         }
 
