@@ -11,6 +11,16 @@ def replace_between(text,start_marker,end_marker,new_block,label):
     if b<0: raise SystemExit(f"missing end {label}")
     return text[:a]+new_block+text[b:]
 
+def replace_function(text,start_marker,new_block,label):
+    a=text.find(start_marker)
+    if a<0: raise SystemExit(f"missing function {label}")
+    search_from=a+len(start_marker)
+    m=re.search(r'\n\s*private fun [A-Za-z_][A-Za-z0-9_]*\s*\(',text[search_from:])
+    if not m:
+        raise SystemExit(f"missing next function after {label}")
+    b=search_from+m.start()+1
+    return text[:a]+new_block+text[b:]
+
 p=ROOT/"app/build.gradle.kts"
 s=p.read_text()
 s=re.sub(r'versionCode\s*=\s*\d+','versionCode = 14',s,count=1)
@@ -75,7 +85,7 @@ suggestion_bar='''    private fun addSuggestionBar(p:ThemeUtil.Palette, privateM
     }
 
 '''
-s=replace_between(s,'    private fun addSuggestionBar(','    private fun addBarItem(',suggestion_bar,'suggestion bar')
+s=replace_function(s,'    private fun addSuggestionBar(',suggestion_bar,'suggestion bar')
 
 helper='''    private fun addToolbarButton(row:LinearLayout,p:ThemeUtil.Palette,label:String,weight:Float=.75f,active:Boolean=false,action:()->Unit){
         val v=TextView(this).apply{
@@ -200,7 +210,7 @@ new_update='''    private fun updateSuggestions(){
     }
 
 '''
-s=replace_between(s,'    private fun updateSuggestions(){','private fun requestSuggestionsAsync(',new_update,'update suggestions')
+s=replace_function(s,'    private fun updateSuggestions(){',new_update,'update suggestions')
 
 s=re.sub(r'val weight=if\(!symbols && \(label=="⇧"\|\|label=="⌫"\)\)\d+(?:\.\d+)?f else 1f',
          'val weight=if(!symbols && (label=="⇧"||label=="⌫"))1.48f else 1f',s,count=1)
@@ -255,7 +265,7 @@ bottom='''    private fun addBottomRow(p:ThemeUtil.Palette,lang:String,scale:Flo
     }
 
 '''
-s=replace_between(s,'    private fun addBottomRow(','private fun addFooter(',bottom,'bottom row')
+s=replace_function(s,'    private fun addBottomRow(',bottom,'bottom row')
 
 s=re.sub(r'val corner=dp\([^\n]+\)\.toFloat\(\)','val corner=dp(8.0f).toFloat()',s,count=1)
 s=re.sub(r'val xInset=dp\([^\n]+\)','val xInset=dp(1.55f)',s,count=1)
